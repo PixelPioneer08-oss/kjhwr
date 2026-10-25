@@ -24,7 +24,7 @@ export const KpiGrid: React.FC<KpiGridProps> = ({ summary }) => {
             {fmt(summary.buffer_p90)}<span className="unit">MW</span>
           </div>
           <div className="kpi-desc">
-            Assume wind is up to this much below forecast to be ~90% confident generation meets plan. Prevents cashout imbalance penalties.
+            Assume wind is up to this much below forecast to be ~90% confident generation meets plan. Reduces exposure to imbalance settlement.
           </div>
           <div className="kpi-split">
             <span>P95 Buffer: <strong style={{ color: 'var(--amber)', fontFamily: 'var(--mono)' }}>{fmt(summary.buffer_p95)} MW</strong></span>
@@ -72,7 +72,7 @@ export const KpiGrid: React.FC<KpiGridProps> = ({ summary }) => {
             <span>Over-fc intervals: <strong style={{ color: 'var(--amber)', fontFamily: 'var(--mono)' }}>{summary.share_overforecast}%</strong></span>
           </div>
           <div className="kpi-desc" style={{ marginTop: 8 }}>
-            {over ? 'Wind over-forecasted → utility under-buys non-wind → cashout shortfall risk.' : 'Wind under-forecasted → surplus generation → cheaper to unwind.'}
+            {over ? 'Wind over-forecasted → utility under-buys non-wind → creates shortfall exposure.' : 'Wind under-forecasted → surplus generation → position long.'}
           </div>
         </div>
 

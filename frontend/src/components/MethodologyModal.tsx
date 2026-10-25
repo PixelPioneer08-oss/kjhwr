@@ -118,7 +118,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
                   Positive Error (&gt; 0) = Wind Over-Forecast
                 </span>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                  Utility assumed wind would generate more than it did. Results in <strong>under-buying</strong> non-wind supply → generation deficit → exposure to costly System Buy Price (Cash-Out).
+                  Utility assumed wind would generate more than it did. Results in <strong>under-buying</strong> non-wind supply → generation deficit → exposed to volatile imbalance settlement (System Buy Price / Cash-Out).
                 </p>
               </div>
               <div style={{
@@ -129,7 +129,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
                   Negative Error (&lt; 0) = Wind Under-Forecast
                 </span>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                  Surplus wind generation. Utility over-procured non-wind. Unwinding a surplus via cash-out sell is far cheaper than facing a deficit.
+                  Surplus wind generation. Utility over-procured non-wind. Unwinding a surplus via system sell or spill carries lower financial penalties than facing an unexpected shortfall.
                 </p>
               </div>
             </div>
@@ -175,13 +175,52 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <Clock size={15} color="var(--cyan)" />
-              5. Decision Day D-1 vs Delivery Day D Window
+              5. Decision Day D-1 vs Delivery Day D Window &amp; Timezones
             </h3>
             <p>
               Under day-ahead market rules, power delivered on day <strong style={{ color: '#fff' }}>D</strong> must be transacted on day <strong style={{ color: '#fff' }}>D-1</strong>.
             </p>
             <p>
-              When purchase decisions span <strong style={{ color: '#fff' }}>1–31 January 2026</strong> (decision days D-1), physical electricity delivery occurs from <strong style={{ color: '#fff' }}>2 January to 1 February 2026</strong>. The date picker allows flexibility to evaluate any custom window.
+              When purchase decisions span <strong style={{ color: '#fff' }}>1–31 January 2026</strong> (decision days D-1), physical electricity delivery occurs from <strong style={{ color: '#fff' }}>2 January to 1 February 2026</strong> (744 hourly settlement intervals). All delivery hours and gate closures are strictly anchored to <strong style={{ color: 'var(--cyan)' }}>Europe/London</strong> (GMT, UTC+0 in January).
+            </p>
+          </div>
+
+          {/* Section 6: Systematic Bias & Embedded Wind */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <Layers size={15} color="var(--amber)" />
+              6. Systematic Forecast Bias: Transmission Metering vs Embedded Wind
+            </h3>
+            <p>
+              The pilot observes a mean forecast bias of <strong style={{ color: 'var(--amber)' }}>+1,746 MW</strong> (forecasts average 13,031 MW vs 11,286 MW actuals, with 84.7% of hours over-forecast). Power market analysis reveals this is an authentic structural data characteristic:
+            </p>
+            <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <li>
+                <strong style={{ color: '#fff' }}>WINDFOR Coverage:</strong> National Grid ESO (NESO) produces national wind forecasts covering <em>both</em> transmission-connected offshore/onshore wind farms and distribution-connected (embedded) wind generation across Great Britain (~30+ GW total capacity).
+              </li>
+              <li>
+                <strong style={{ color: '#fff' }}>FUELHH Coverage:</strong> The Elexon FUELHH stream meters power injected by Balancing Mechanism (BM) Units directly into the National Electricity Transmission System (NETS).
+              </li>
+              <li>
+                <strong style={{ color: '#fff' }}>The Embedded Wind Gap:</strong> Embedded wind farms (~5–7 GW capacity in GB) connect directly to regional 33kV/11kV Distribution Network Operators (DNOs). At transmission level, embedded generation manifests as "negative demand" at Grid Supply Points rather than metered FUELHH generation, creating the structural ~1.5–2 GW delta.
+              </li>
+              <li>
+                <strong style={{ color: '#fff' }}>Half-Hour Averaging Verification:</strong> Resampling 30-minute actuals by taking the hourly mean <code>(SP1 + SP2) / 2</code> yields <strong>11,283.56 MW</strong> (vs 11,285.51 MW for exact :00 join), proving the systematic bias is a physical scope difference rather than an alignment artifact.
+              </li>
+            </ul>
+          </div>
+
+          {/* Section 7: Sample Size & Buffer Robustness */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <ShieldAlert size={15} color="var(--emerald)" />
+              7. Statistical Robustness: Window Benchmark vs Single-Day Buffer
+            </h3>
+            <p>
+              The What-If Calculator defaults to the <strong style={{ color: 'var(--cyan)' }}>Window Benchmark Buffer (4,154 MW, N=744)</strong>. A full-month sample captures the true empirical error distribution across diverse weather regimes (high-pressure calms, Atlantic storms, ramp rates).
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              While a single-day buffer (N=24 points, e.g. 1,543 MW on 2 Jan) can be toggled for day-specific inspection, 24 points are statistically noisy and vulnerable to intra-day variance. Trading desks are advised to base baseline risk reserves on the full-window empirical P90.
             </p>
           </div>
         </div>

@@ -48,24 +48,24 @@ This script provides word-for-word talking points, screen actions, and visual cu
 *(Action: Scroll down to the What-If Procurement Tool).*
 
 > *"To protect against this deficit, our engine computes the **P90 Risk Buffer**: `max(0, P90 of Error)`.*
-> *For January, this buffer is **3,650 MW**.*
-> *What does this mean practically? If your desk discounts the headline wind forecast by 3,650 MW, you can be **90% confident** that actual wind generation will meet or exceed your procurement plan.*
+> *For the January benchmark, this whole-window buffer is **4,154 MW** (and 1,543 MW on our selected delivery day).*
+> *What does this mean practically? If your desk discounts the headline wind forecast by this buffer, you can be **~90% confident** that actual wind generation will meet or exceed your procurement plan.*
 >
 > *Let's see this in our interactive **What-If Tool**.*
 > *Suppose your consumer demand is **25,000 MW**.*
-> *An unadjusted desk buys `Demand - Forecast` = **15,000 MW** of non-wind power. When wind falls short, they get hit with huge cashout penalties.*
-> *Our risk-adjusted desk buys `Demand - (Forecast - Buffer)` = **18,650 MW**.*
-> *Procuring this additional **3,650 MW** of thermal or flexible reserve in the competitive day-ahead auction eliminates your exposure to peak balancing mechanism penalties."*
+> *An unadjusted desk buys `Demand - Forecast`. When wind falls short, they face unhedged deficit volume settled at volatile cash-out prices.*
+> *Our risk-adjusted desk procures an additional reserve buffer.*
+> *Procuring this additional thermal or flexible supply in the competitive day-ahead auction significantly reduces exposure to costly Balancing Mechanism deficit settlement."*
 
 ### [3:45 – 4:55] Lead-Time Curve & Business Value Summary
 *(Action: Click on the 'Lead-Time Curve' tab).*
 
 > *"Finally, let's look at the **Lead-Time Curve** from 1 to 48 hours ahead.*
 > *This chart answers a key commercial question: **What is the cost of deciding a day ahead?***
-> *At an intraday horizon of 4 hours ahead, forecast MAE is only ~800 MW. By committing at the Day-Ahead gate closure (28 hours ahead), error increases by over **60%**.*
+> *At an intraday horizon of 4 hours ahead, forecast MAE is only ~800 MW. By committing at the Day-Ahead gate closure (28 hours ahead), error increases substantially.*
 > *This quantifies the exact option value of holding back a portion of your flexible assets for intraday trading.*
 >
-> *In summary: this product gives your trading desk clear forecast visibility, zero look-ahead bias, and an actionable, mathematical risk buffer that saves hundreds of thousands of pounds in cashout penalties."*
+> *In summary: this product gives your trading desk clear forecast visibility, zero look-ahead bias, and an actionable, mathematical risk buffer that mitigates exposure to volatile imbalance settlement."*
 
 ---
 

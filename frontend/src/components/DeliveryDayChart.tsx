@@ -19,10 +19,15 @@ const CustomTooltip = ({ active, payload }: any) => {
   const pubDt = new Date(d.publishTime);
   const pubStr = pubDt.toLocaleDateString('en-GB', { month: 'short', day: 'numeric', timeZone: 'UTC' })
     + ' ' + pubDt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+  
+  const hourStr = typeof d.hour === 'number' 
+    ? `${d.hour.toString().padStart(2, '0')}:00` 
+    : new Date(d.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+
   return (
     <div style={{ background: '#0d1117', border: '1px solid #1e2d45', borderRadius: 10, padding: '12px 16px', minWidth: 230, boxShadow: '0 8px 32px rgba(0,0,0,0.6)', fontSize: 12 }}>
       <div style={{ fontWeight: 700, color: '#f0f6ff', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid #1e2d45' }}>
-        {new Date(d.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} — Delivery
+        {hourStr} London (GMT) — Delivery
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
         <span style={{ color: '#06b6d4' }}>Actual:</span>
@@ -54,7 +59,7 @@ export const DeliveryDayChart: React.FC<Props> = ({ dayData, availableDays, sele
 
   const series = dayData.series.map(pt => ({
     ...pt,
-    hour: new Date(pt.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    hour: `${pt.hour.toString().padStart(2, '0')}:00`,
     overMW:  pt.error > 0 ? pt.error : 0,
     underMW: pt.error < 0 ? pt.error : 0,
   }));
@@ -68,7 +73,7 @@ export const DeliveryDayChart: React.FC<Props> = ({ dayData, availableDays, sele
             <span style={{ color: 'var(--cyan)', fontFamily: 'var(--mono)' }}>{selectedDay}</span>
           </div>
           <div className="chart-sub">
-            Day-ahead forecast (cut-off {cutoff} London on D-1) vs. actual delivered wind generation
+            Day-ahead forecast (cut-off {cutoff} London on D-1) vs. actual delivered wind generation (Hours in London / UTC)
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -106,7 +111,7 @@ export const DeliveryDayChart: React.FC<Props> = ({ dayData, availableDays, sele
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2d45" vertical={false} />
-              <XAxis dataKey="hour" stroke="#2d3748" tick={{ fill: '#4a5568', fontSize: 11 }} />
+              <XAxis dataKey="hour" stroke="#2d3748" tick={{ fill: '#8b9dc3', fontSize: 11 }} />
               <YAxis yAxisId="mw" stroke="#2d3748" tick={{ fill: '#4a5568', fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} width={42} />
               <YAxis yAxisId="err" orientation="right" stroke="#2d3748" tick={{ fill: '#4a5568', fontSize: 11 }} tickFormatter={v => `${v > 0 ? '+' : ''}${Math.round(v/100)/10}k`} width={46} />
               <Tooltip content={<CustomTooltip />} />
@@ -146,7 +151,7 @@ export const DeliveryDayChart: React.FC<Props> = ({ dayData, availableDays, sele
                   const pubStr = new Date(row.publishTime).toLocaleString('en-GB', { timeZone: 'UTC', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) + ' UTC';
                   return (
                     <tr key={row.startTime}>
-                      <td>{new Date(row.startTime).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</td>
+                      <td>{`${row.hour.toString().padStart(2, '0')}:00 London`}</td>
                       <td style={{ color: 'var(--cyan)' }}>{row.actual.toLocaleString()}</td>
                       <td style={{ color: 'var(--indigo)' }}>{row.forecast.toLocaleString()}</td>
                       <td className={row.error > 0 ? 'val-over' : 'val-under'}>

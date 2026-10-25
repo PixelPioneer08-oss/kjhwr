@@ -25,7 +25,7 @@ export const DailyTrendChart: React.FC<DailyTrendChartProps> = ({
   selectedDay
 }) => {
   const data = dailyMetrics.map((d) => {
-    const formatted = new Date(d.date).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    const formatted = new Date(d.date + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'short', day: 'numeric', timeZone: 'UTC' });
     return { ...d, dateFormatted: formatted };
   });
 

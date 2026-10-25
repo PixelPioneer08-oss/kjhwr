@@ -9,7 +9,7 @@ interface WhatIfToolProps {
 
 export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
   const [demandMW, setDemandMW] = useState<number>(25000);
-  const [useDaySpecific, setUseDaySpecific] = useState<boolean>(true);
+  const [useDaySpecific, setUseDaySpecific] = useState<boolean>(false);
 
   const windForecastMW = useDaySpecific ? dayData.summary.mean_forecast : summary.mean_forecast;
   const p90BufferMW = useDaySpecific ? dayData.summary.buffer_p90 : summary.buffer_p90;
@@ -62,43 +62,48 @@ export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
               </span>
             </div>
             <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>
-              Calculate risk-adjusted non-wind procurement required to protect consumer demand against wind forecast error
+              Calculate risk-adjusted non-wind procurement required to protect consumer demand against wind forecast shortfall
             </p>
           </div>
         </div>
 
         {/* Toggle: Day vs Window */}
-        <div style={{
-          display: 'flex', padding: 4, gap: 2,
-          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-          borderRadius: 8, fontSize: 11,
-        }}>
-          <button
-            onClick={() => setUseDaySpecific(true)}
-            style={{
-              padding: '4px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
-              background: useDaySpecific ? 'rgba(6,182,212,0.2)' : 'transparent',
-              color: useDaySpecific ? '#67e8f9' : 'var(--text-muted)',
-              fontWeight: useDaySpecific ? 600 : 400,
-              transition: 'all 0.15s',
-              fontFamily: 'var(--font)',
-            }}
-          >
-            Day ({dayData.date})
-          </button>
-          <button
-            onClick={() => setUseDaySpecific(false)}
-            style={{
-              padding: '4px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
-              background: !useDaySpecific ? 'rgba(6,182,212,0.2)' : 'transparent',
-              color: !useDaySpecific ? '#67e8f9' : 'var(--text-muted)',
-              fontWeight: !useDaySpecific ? 600 : 400,
-              transition: 'all 0.15s',
-              fontFamily: 'var(--font)',
-            }}
-          >
-            Window Average
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <div style={{
+            display: 'flex', padding: 4, gap: 2,
+            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+            borderRadius: 8, fontSize: 11,
+          }}>
+            <button
+              onClick={() => setUseDaySpecific(false)}
+              style={{
+                padding: '4px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
+                background: !useDaySpecific ? 'rgba(6,182,212,0.2)' : 'transparent',
+                color: !useDaySpecific ? '#67e8f9' : 'var(--text-muted)',
+                fontWeight: !useDaySpecific ? 600 : 400,
+                transition: 'all 0.15s',
+                fontFamily: 'var(--font)',
+              }}
+            >
+              Window Benchmark (P90: {Math.round(summary.buffer_p90).toLocaleString()} MW, N={summary.n})
+            </button>
+            <button
+              onClick={() => setUseDaySpecific(true)}
+              style={{
+                padding: '4px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
+                background: useDaySpecific ? 'rgba(6,182,212,0.2)' : 'transparent',
+                color: useDaySpecific ? '#67e8f9' : 'var(--text-muted)',
+                fontWeight: useDaySpecific ? 600 : 400,
+                transition: 'all 0.15s',
+                fontFamily: 'var(--font)',
+              }}
+            >
+              Day {dayData.date.replace('2026-', '')} (P90: {Math.round(dayData.summary.buffer_p90).toLocaleString()} MW, N=24)
+            </button>
+          </div>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+            {!useDaySpecific ? '✓ Using statistically robust 744-hour window buffer' : '⚠ Using single-day indicative sample (24 points)'}
+          </span>
         </div>
       </div>
 
@@ -174,7 +179,7 @@ export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
                 <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-secondary)' }}>MW</span>
               </p>
               <p style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                <code style={{ color: '#67e8f9', fontFamily: 'var(--mono)' }}>Demand – Wind Forecast</code>. Assumes 100% of forecast delivered. Exposes utility to imbalance penalties if wind underperforms.
+                <code style={{ color: '#67e8f9', fontFamily: 'var(--mono)' }}>Demand – Wind Forecast</code>. Assumes 100% of forecast delivered. Leaves utility exposed to unhedged imbalance risk if wind underperforms.
               </p>
             </div>
 
@@ -219,7 +224,7 @@ export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
                 Recommended Non-Wind Reserve Commitment: +{Math.round(additionalBuffer).toLocaleString()} MW
               </span>
               <p style={{ color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.5 }}>
-                Procuring this extra {Math.round(additionalBuffer).toLocaleString()} MW of thermal / flexible supply in the day-ahead auction prevents exposing the utility to UK Cash-Out Imbalance Settlement prices.
+                Procuring this extra {Math.round(additionalBuffer).toLocaleString()} MW of thermal / flexible supply in the day-ahead auction reduces exposure to volatile cash-out settlement during wind deficit periods.
               </p>
             </div>
           </div>
