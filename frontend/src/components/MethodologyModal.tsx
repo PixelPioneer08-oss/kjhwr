@@ -82,8 +82,8 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
             </h3>
             <p>In the GB wholesale electricity market, day-ahead power is transacted in competitive auctions with specific gate closures:</p>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <li><strong style={{ color: '#fff' }}>EPEX SPOT GB Day-Ahead:</strong> Auction order book closes at <strong style={{ color: 'var(--cyan)' }}>09:20 London time</strong> on Day D-1. <em>(Default cut-off in this pilot)</em></li>
-              <li><strong style={{ color: '#fff' }}>Nord Pool N2EX Day-Ahead:</strong> Auction order book closes at <strong style={{ color: 'var(--cyan)' }}>09:50 London time</strong> on Day D-1.</li>
+              <li><strong style={{ color: '#fff' }}>EPEX SPOT GB Day-Ahead:</strong> Auction order book closes at <strong style={{ color: 'var(--cyan)' }}>09:20 London time</strong> on Day D-1 (<a href="https://www.epexspot.com/en/market-data?market_area=GB&trading_hub=GB&underlying_market=DayAhead" target="_blank" rel="noreferrer" style={{ color: 'var(--cyan)' }}>EPEX SPOT GB specifications</a>). <em>(Default cut-off in this pilot)</em></li>
+              <li><strong style={{ color: '#fff' }}>Nord Pool N2EX Day-Ahead:</strong> Auction order book closes at <strong style={{ color: 'var(--cyan)' }}>09:50 London time</strong> on Day D-1 (<a href="https://www.nordpoolgroup.com/en/trading/Day-ahead-trading/Auction-markets/" target="_blank" rel="noreferrer" style={{ color: 'var(--cyan)' }}>Nord Pool N2EX rules</a>).</li>
               <li><strong style={{ color: 'var(--amber)' }}>11:00 Later Cut-off Sensitivity:</strong> Provided as a configurable sensitivity benchmark to evaluate forecast error improvements if decision gates are delayed.</li>
             </ul>
             <div style={{
@@ -200,10 +200,10 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
             </p>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <li>
-                <strong style={{ color: '#fff' }}>Data Integrity Confirmed:</strong> Hourly mean actuals <code>(SP1+SP2)/2</code> of 11,283.6 MW match exact :00 actuals of 11,285.5 MW within 1.95 MW, confirming that this is an authentic difference rather than an alignment or summing error.
+                <strong style={{ color: '#fff' }}>Ruled out aggregation as the cause:</strong> Resampling 30-minute actuals via hourly mean <code>(SP1+SP2)/2</code> yields 11,283.6 MW (within 0.017% of the exact :00 join of 11,285.5 MW), confirming that 30-minute to 60-minute aggregation convention does not cause the observed bias.
               </li>
               <li>
-                <strong style={{ color: '#fff' }}>Likely Scope Distinction (Unverified with public BMRS data alone):</strong> Elexon BMRS documentation for <code>FUELHH</code> defines <code>fuelType=WIND</code> as metered generation from Balancing Mechanism Units connected to the National Electricity Transmission System. Conversely, National Grid ESO national wind forecasts (<code>WINDFOR</code>) model total national-level wind output, which typically includes distributed / embedded wind farms connected to regional distribution networks (DNOs). Because embedded generation is not metered in FUELHH (acting as negative demand at Grid Supply Points), national forecasts will structurally exceed transmission-metered actuals. This is a likely candidate explanation based on GB market architecture, though unverified within the scope of this dataset.
+                <strong style={{ color: '#fff' }}>Likely Scope Distinction (Unverified with public BMRS data alone):</strong> Elexon BMRS documentation for <a href="https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELHH" target="_blank" rel="noreferrer" style={{ color: 'var(--cyan)' }}>FUELHH</a> indicates that it appears to cover metered generation from Balancing Mechanism Units connected directly to the National Electricity Transmission System (NETS). Conversely, National Grid ESO national wind forecasts (<a href="https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR" target="_blank" rel="noreferrer" style={{ color: 'var(--cyan)' }}>WINDFOR</a>) model national-level wind output, which likely includes distributed / embedded wind generation connected to regional distribution networks (DNOs). Because embedded generation is not directly metered in FUELHH (acting as negative demand at Grid Supply Points), national forecasts would structurally exceed transmission-metered actuals. This is a likely candidate explanation based on GB market architecture, though unverified within the scope of this dataset.
               </li>
             </ul>
           </div>
@@ -251,7 +251,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
               Under EPEX SPOT gate closure (09:20 London time on D-1), delivery hours on Day D range from 00:00 (14.7 hours ahead) to 23:00 (37.7 hours ahead).
             </p>
             <p>
-              Because NESO publishes WINDFOR forecasts at discrete intervals (typically 02:30, 04:30, 07:30 UTC prior to gate closure), the latest valid forecast prior to 09:20 is typically the 07:30 run. This results in an empirical <strong style={{ color: 'var(--cyan)' }}>mean lead time of 28.0 hours</strong> across all evaluated intervals in January.
+              As noted in Section 4, NESO publishes WINDFOR forecasts at discrete times across the day (9 runs observed); the <strong>07:30 UTC run</strong> is the latest available before the 09:20 gate closure. This results in an empirical <strong style={{ color: 'var(--cyan)' }}>mean lead time of 28.0 hours</strong> across all evaluated intervals in January.
             </p>
           </div>
 
@@ -262,12 +262,12 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
               10. Known Limitation: Flat MW Buffer vs. Dynamic Wind-Level Regimes
             </h3>
             <p>
-              A flat MW buffer ignores the level of wind. In physical reality, forecast error scales with total wind generation:
+              A flat MW buffer ignores the level of wind. In physical reality, forecast error variance scales with the expected level of wind. Crucially, bucketing is evaluated strictly on <strong>forecast generation level</strong> (P_forecast) known at decision time (rather than outturn actuals), ensuring zero look-ahead bias:
             </p>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <li><strong style={{ color: '#fff' }}>Low Wind (&lt;8 GW):</strong> Empirical P90 Error = <strong>1,887 MW</strong> (flat 4,154 MW buffer would be overly conservative and expensive).</li>
-              <li><strong style={{ color: '#fff' }}>Medium Wind (8–16 GW):</strong> Empirical P90 Error = <strong>3,606 MW</strong>.</li>
-              <li><strong style={{ color: '#fff' }}>High Wind (&gt;16 GW):</strong> Empirical P90 Error = <strong>4,788 MW</strong> (flat 4,154 MW buffer would be insufficient to cover tail risk).</li>
+              <li><strong style={{ color: '#fff' }}>Low Wind Forecast (&lt;8 GW):</strong> Empirical P90 Error = <strong>1,887 MW</strong> (flat 4,154 MW buffer would be overly conservative and expensive).</li>
+              <li><strong style={{ color: '#fff' }}>Medium Wind Forecast (8–16 GW):</strong> Empirical P90 Error = <strong>3,606 MW</strong>.</li>
+              <li><strong style={{ color: '#fff' }}>High Wind Forecast (&gt;16 GW):</strong> Empirical P90 Error = <strong>4,788 MW</strong> (flat 4,154 MW buffer would be insufficient to cover tail risk).</li>
               <li><strong style={{ color: '#fff' }}>Proportional Relative Error:</strong> Across January, empirical P90 relative error is <strong>30.3% of the forecast</strong>. The What-If Tool includes a dynamic toggle for both Proportional and Bucketed Regime modes to address this limitation.</li>
             </ul>
           </div>

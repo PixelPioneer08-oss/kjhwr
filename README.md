@@ -1,6 +1,6 @@
 # GB Wind Day-Ahead Procurement & Forecast Risk Pilot
 
-A full-stack analytical web application and pilot built for a UK electricity utility day-ahead trading desk. The platform evaluates national-level Great Britain (GB) wind generation forecasts against outturn actuals from **Elexon BMRS**, quantifies forecast uncertainty, strictly eliminates look-ahead bias at day-ahead gate closure, and provides a quantitative **P90 Risk Buffer** to inform non-wind procurement decisions.
+A full-stack analytical web application and pilot built for a UK electricity utility day-ahead trading desk. The platform evaluates national-level Great Britain (GB) wind generation forecasts against outturn actuals from **Elexon BMRS**, quantifies forecast uncertainty, filters forecasts by publish timestamp relative to day-ahead gate closure, and provides a quantitative **P90 Risk Buffer** to inform non-wind procurement decisions.
 
 ---
 
@@ -17,7 +17,7 @@ A full-stack analytical web application and pilot built for a UK electricity uti
 
 ## 🤖 Explicit Statement on AI Tools Used
 
-In accordance with the hiring challenge guidelines, **AI tools (Google DeepMind Antigravity / Claude 3.7 / Gemini)** were utilized to assist with software engineering, architectural scaffolding, documentation, and data engineering for this submission. All domain calculations, API contracts, statistical formulas, and unit tests were verified against real Elexon BMRS market data.
+In accordance with the hiring challenge guidelines, **AI tools (Google DeepMind Antigravity / Claude 3.7 / Gemini)** were utilized to assist with software engineering, architectural scaffolding, documentation, and data engineering for this submission. Domain calculations, API contracts, statistical formulas, and unit tests were evaluated against real Elexon BMRS market data.
 
 ---
 
@@ -76,16 +76,16 @@ In accordance with the hiring challenge guidelines, **AI tools (Google DeepMind 
 
 ### 1. Gate Closure Timings (London Time)
 In Great Britain, wholesale power exchanges operate uncoupled day-ahead auctions with specific gate closure times:
-* **EPEX SPOT GB:** Auction order book closes at **09:20 London time** on Day D-1 (**Default in this app**).
-* **Nord Pool N2EX:** Auction order book closes at **09:50 London time** on Day D-1.
+* **EPEX SPOT GB:** Auction order book closes at **09:20 London time** on Day D-1 ([EPEX SPOT GB Day-Ahead Auction](https://www.epexspot.com/en/market-data?market_area=GB&trading_hub=GB&underlying_market=DayAhead)). (**Default in this app**).
+* **Nord Pool N2EX:** Auction order book closes at **09:50 London time** on Day D-1 ([Nord Pool N2EX Day-Ahead Auction](https://www.nordpoolgroup.com/en/trading/Day-ahead-trading/Auction-markets/)).
 * **11:00 Later Cut-off Sensitivity:** Provided as a configurable sensitivity benchmark to evaluate forecast error improvements if decision gates are delayed.
 * *Timezone Note:* London time (`Europe/London`) is strictly utilized for calendar days and cutoffs. In January, London time equals UTC (GMT+0), but daylight saving conversions are handled correctly in code via tz-aware timestamps.
 
-### 2. Strict Look-Ahead Isolation (Zero Leakage)
+### 2. Cut-off Rule & Forecast Selection
 * For delivery day $D$, the purchase decision is committed on day $D-1$ before gate closure.
 * For each target interval on day $D$, the algorithm filters all forecasts published by NESO with $\text{publishTime} \le \text{cut-off timestamp}$.
 * It selects the **latest** (newest) forecast available prior to the cut-off.
-* Any forecast published after gate closure is discarded. (Verified in unit test: `test_excludes_forecasts_after_cutoff`).
+* Any forecast published after gate closure is discarded (tested in unit test: `test_excludes_forecasts_after_cutoff`).
 
 ### 3. Resolution Mismatch & Hourly Alignment
 * **Actuals (`FUELHH`):** 30-minute settlement period resolution (:00 and :30 timestamps). Filtered for `fuelType == "WIND"`.
@@ -111,8 +111,8 @@ $$\text{Buffer}_{\text{P90}} = \max(0, \text{P90 of Error})$$
 
 ### 6. Systematic Bias Analysis & Scope Considerations
 The day-ahead forecast systematically over-predicted in January 2026, with an average bias of **+1,746 MW** and 84.7% of hourly intervals over-forecast. Several factors explain this finding:
-* **Data Integrity Confirmed:** Hourly mean actuals `(SP1+SP2)/2` of 11,283.6 MW match exact :00 actuals of 11,285.5 MW within 1.95 MW, confirming that this is an authentic difference rather than an alignment or summing error.
-* **Likely Scope Distinction (Unverified with public BMRS data alone):** Elexon BMRS documentation for `FUELHH` defines `fuelType=WIND` as metered generation from Balancing Mechanism Units connected directly to the National Electricity Transmission System. Conversely, National Grid ESO national wind forecasts (`WINDFOR`) model total national-level wind output, which typically includes distributed / embedded wind farms connected to regional distribution networks (DNOs). Because embedded generation is not metered in FUELHH (acting as negative demand at Grid Supply Points), national forecasts will structurally exceed transmission-metered actuals. This is a likely candidate explanation based on GB market architecture, though unverified within the scope of this dataset.
+* **Ruled out aggregation as the cause:** Resampling 30-minute actuals via hourly mean `(SP1+SP2)/2` yields 11,283.6 MW (within 0.017% of the exact :00 join of 11,285.5 MW), confirming that 30-minute to 60-minute aggregation convention does not cause the observed bias.
+* **Likely Scope Distinction (Unverified with public BMRS data alone):** Elexon BMRS documentation for [FUELHH](https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELHH) indicates that it appears to cover metered generation from Balancing Mechanism Units connected directly to the National Electricity Transmission System (NETS). Conversely, National Grid ESO national wind forecasts ([WINDFOR](https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR)) model national-level wind output, which likely includes distributed / embedded wind generation connected to regional distribution networks (DNOs). Because embedded generation is not directly metered in FUELHH (acting as negative demand at Grid Supply Points), national forecasts would structurally exceed transmission-metered actuals. This is a likely candidate explanation based on GB market architecture, though unverified within the scope of this dataset.
 
 ### 7. Separating Systematic Bias from Meteorological Spread ($P_{50}$ vs $P_{90}$)
 The full-window **P90 Buffer (4,154 MW)** decomposes into two distinct mathematical components:
@@ -120,15 +120,15 @@ The full-window **P90 Buffer (4,154 MW)** decomposes into two distinct mathemati
 * **Stochastic Weather Spread ($P_{90} - P_{50} = 2,572\text{ MW}$, ~62%):** The true residual meteorological uncertainty resulting from unpredictable frontal timing, barometric shifts, and spatial dispersion.
 
 ### 8. Known Limitation: Flat MW Buffer vs Dynamic Wind-Level Regimes
-A flat MW buffer treats all wind days identically. In reality, forecast error variance scales with total wind output:
-* **Low Wind (<8 GW):** Empirical $P_{90}$ Error = **1,887 MW** (a flat 4,154 MW buffer is overly conservative).
-* **Medium Wind (8–16 GW):** Empirical $P_{90}$ Error = **3,606 MW**.
-* **High Wind (>16 GW):** Empirical $P_{90}$ Error = **4,788 MW** (a flat 4,154 MW buffer leaves tail risk unhedged).
+A flat MW buffer treats all wind days identically. In reality, forecast error variance scales with the expected level of wind. Crucially, bucketing is evaluated strictly on **forecast generation level** ($P_{\text{forecast}}$) known at decision time (rather than outturn actuals), ensuring zero look-ahead bias:
+* **Low Wind Forecast (<8 GW):** Empirical $P_{90}$ Error = **1,887 MW** (a flat 4,154 MW buffer is overly conservative).
+* **Medium Wind Forecast (8–16 GW):** Empirical $P_{90}$ Error = **3,606 MW**.
+* **High Wind Forecast (>16 GW):** Empirical $P_{90}$ Error = **4,788 MW** (a flat 4,154 MW buffer leaves tail risk unhedged).
 * **Proportional Relative Scaling:** Across January, empirical $P_{90}$ relative error is **30.3% of the forecast**. The What-If Tool includes a dynamic toggle for both Proportional and Bucketed Regime modes to address this limitation.
 
 ### 9. January 2026 Benchmark Period & Lead-Time Dynamics
 * **Decision vs Delivery:** Purchase decisions made in **January 2026** ($D-1 \in [\text{2026-01-01}, \text{2026-01-31}]$) correspond to physical power delivery from **2 January to 1 February 2026** ($n=744$ hourly settlement intervals).
-* **Mean Lead Time of 28.0 Hours:** For delivery day $D$, gate closure occurs at 09:20 London time on $D-1$. Because NESO publishes WINDFOR runs at discrete times (typically 02:30, 04:30, 07:30 UTC), the newest forecast available prior to 09:20 is the 07:30 run. This produces an empirical **mean lead time of 28.0 hours** (ranging from 16.5h for hour 00:00 to 39.5h for hour 23:00).
+* **Mean Lead Time of 28.0 Hours:** For delivery day $D$, gate closure occurs at 09:20 London time on $D-1$. As noted in Section 3, NESO publishes WINDFOR forecasts at discrete times across the day; the **07:30 UTC run** is the latest available before the 09:20 gate closure. This produces an empirical **mean lead time of 28.0 hours** (ranging from 16.5h for hour 00:00 to 39.5h for hour 23:00).
 * All timestamps and gate closures are strictly anchored to **Europe/London** (GMT / UTC+0 in winter).
 
 ---
@@ -223,7 +223,7 @@ pytest backend/tests -v
 2. `test_picks_latest_before_cutoff`: Verifies that the newest available forecast run prior to cut-off is chosen.
 3. `test_inclusive_cutoff`: Verifies that forecasts published precisely at the cut-off boundary are included.
 4. `test_error_sign_convention`: Verifies that $\text{error} = \text{forecast} - \text{actual}$ produces positive values for over-forecasts and negative values for under-forecasts.
-5. `test_decision_window_logic`: Proves $D-1$ decision window maps accurately to delivery day $D$.
+5. `test_decision_window_logic`: Verifies that $D-1$ decision windows map to delivery day $D$ ($D-1 + 1$ day).
 6. `test_horizon_mode`: Verifies fixed lead-time filtering ($T - h$ hours).
 7. `test_metrics_calculation_and_p90_buffer`: Verifies MAE, RMSE, WAPE, MAPE, and P90 buffer calculations against synthetic fixtures.
 8. `test_api_endpoints_and_errors`: Tests FastAPI endpoints, 422 validation for malformed inputs, and 404 for empty query ranges.
