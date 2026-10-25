@@ -9,7 +9,7 @@ interface ControlsProps {
 const CUTOFF_PRESETS = [
   { label: 'EPEX GB 09:20', value: '09:20', note: 'Default' },
   { label: 'N2EX 09:50',    value: '09:50', note: '' },
-  { label: 'Legacy 11:00',  value: '11:00', note: '⚠ Outdated' },
+  { label: '11:00 Later Cut-off', value: '11:00', note: 'Sensitivity' },
 ];
 
 const DATE_PRESETS = [

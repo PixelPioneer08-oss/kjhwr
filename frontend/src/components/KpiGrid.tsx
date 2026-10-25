@@ -82,17 +82,17 @@ export const KpiGrid: React.FC<KpiGridProps> = ({ summary }) => {
             <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
-            Total Shortfall Volume
+            Gross Shortfall Volume
           </div>
           <div className="kpi-value" style={{ color: 'var(--rose)' }}>
             {(Math.round(summary.total_overforecast_mwh / 1000 * 10) / 10).toLocaleString()}<span className="unit">GWh</span>
           </div>
           <div className="kpi-split">
-            <span>Actual wind: <strong style={{ fontFamily: 'var(--mono)' }}>{Math.round(summary.total_actual_mwh / 1000).toLocaleString()} GWh</strong></span>
-            <span>Fc: <strong style={{ fontFamily: 'var(--mono)' }}>{Math.round(summary.total_forecast_mwh / 1000).toLocaleString()} GWh</strong></span>
+            <span>Net Bias: <strong style={{ fontFamily: 'var(--mono)' }}>{(Math.round((summary.total_forecast_mwh - summary.total_actual_mwh) / 1000 * 10) / 10).toLocaleString()} GWh</strong></span>
+            <span>Actual: <strong style={{ fontFamily: 'var(--mono)' }}>{Math.round(summary.total_actual_mwh / 1000).toLocaleString()} GWh</strong></span>
           </div>
           <div className="kpi-desc" style={{ marginTop: 8 }}>
-            Cumulative energy shortfall the utility had to procure from balancing reserve or thermal backup.
+            Gross energy shortfall across over-forecast intervals only. Net forecast error across all intervals is ~1,299.0 GWh.
           </div>
         </div>
       </div>

@@ -80,11 +80,11 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
               <Clock size={15} color="var(--cyan)" />
               1. Day-Ahead Gate Closure Timings (London Time)
             </h3>
-            <p>In the GB wholesale electricity market, day-ahead power is traded on two competing exchanges:</p>
+            <p>In the GB wholesale electricity market, day-ahead power is transacted in competitive auctions with specific gate closures:</p>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <li><strong style={{ color: '#fff' }}>EPEX SPOT GB:</strong> Auction gate closes at <strong style={{ color: 'var(--cyan)' }}>09:20 London time</strong> on Day D-1. <em>(Default cut-off)</em></li>
-              <li><strong style={{ color: '#fff' }}>Nord Pool N2EX:</strong> Auction gate closes at <strong style={{ color: 'var(--cyan)' }}>09:50 London time</strong> on Day D-1.</li>
-              <li><strong style={{ color: 'var(--amber)' }}>Legacy 11:00 London time:</strong> <span style={{ textDecoration: 'underline' }}>OUTDATED</span>. Used pre-Jan 2021. Supported here for historical comparison only.</li>
+              <li><strong style={{ color: '#fff' }}>EPEX SPOT GB Day-Ahead:</strong> Auction order book closes at <strong style={{ color: 'var(--cyan)' }}>09:20 London time</strong> on Day D-1. <em>(Default cut-off in this pilot)</em></li>
+              <li><strong style={{ color: '#fff' }}>Nord Pool N2EX Day-Ahead:</strong> Auction order book closes at <strong style={{ color: 'var(--cyan)' }}>09:50 London time</strong> on Day D-1.</li>
+              <li><strong style={{ color: 'var(--amber)' }}>11:00 Later Cut-off Sensitivity:</strong> Provided as a configurable sensitivity benchmark to evaluate forecast error improvements if decision gates are delayed.</li>
             </ul>
             <div style={{
               padding: '10px 14px', borderRadius: 8,
@@ -99,7 +99,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <Scale size={15} color="var(--blue)" />
-              2. Error Sign Convention &amp; Financial Asymmetry
+              2. Error Sign Convention &amp; Asymmetry Note
             </h3>
             <p>The error sign convention is defined as:</p>
             <div style={{
@@ -118,7 +118,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
                   Positive Error (&gt; 0) = Wind Over-Forecast
                 </span>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                  Utility assumed wind would generate more than it did. Results in <strong>under-buying</strong> non-wind supply → generation deficit → exposed to volatile imbalance settlement (System Buy Price / Cash-Out).
+                  Utility assumed wind would generate more than delivered. Results in under-procuring non-wind power → physical deficit → exposed to imbalance settlement volume.
                 </p>
               </div>
               <div style={{
@@ -129,10 +129,13 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
                   Negative Error (&lt; 0) = Wind Under-Forecast
                 </span>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
-                  Surplus wind generation. Utility over-procured non-wind. Unwinding a surplus via system sell or spill carries lower financial penalties than facing an unexpected shortfall.
+                  Surplus wind generation. Utility over-procured non-wind power → physical long position.
                 </p>
               </div>
             </div>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>
+              *Note on market asymmetry: While GB cash-out prices are typically asymmetric (system buy price during short periods is historically higher than system sell price during surplus), financial settlement price modeling is explicitly out of scope as no price data is ingested.
+            </p>
           </div>
 
           {/* Section 3: P90 Buffer */}
@@ -162,12 +165,13 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <Layers size={15} color="var(--cyan)" />
-              4. Resolution Handling: 30-Min Actuals vs 60-Min Forecasts
+              4. Resolution Handling &amp; Publish Runs
             </h3>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <li><strong style={{ color: '#fff' }}>Actuals (FUELHH):</strong> 30-minute settlement period resolution (:00 and :30 timestamps). Filtered for <code style={{ fontFamily: 'var(--mono)', color: 'var(--cyan)' }}>fuelType = "WIND"</code>.</li>
-              <li><strong style={{ color: '#fff' }}>Forecasts (WINDFOR):</strong> 60-minute hourly resolution (:00 timestamps). Published up to 8 times daily by NESO.</li>
-              <li><strong style={{ color: '#fff' }}>Join Rule:</strong> Joined strictly on <strong style={{ color: 'var(--cyan)' }}>exact startTime</strong> (:00 on the hour). No interpolation or synthetic points invented. This yields 24 exact hourly matches per day (744 across January).</li>
+              <li><strong style={{ color: '#fff' }}>Forecasts (WINDFOR):</strong> 60-minute hourly resolution (:00 timestamps). Exactly <strong>9 discrete publish runs per day</strong> are detected in the dataset (02:30, 04:30, 07:30, 09:30, 11:30, 12:25, 15:30, 18:30, 22:30 UTC).</li>
+              <li><strong style={{ color: '#fff' }}>Join Rule:</strong> Joined on exact startTime (:00 on the hour), yielding 24 exact hourly points per day (744 across January).</li>
+              <li><strong style={{ color: '#fff' }}>Half-Hour Averaging Check:</strong> Resampling 30-minute actuals via hourly mean <code>(SP1 + SP2) / 2</code> yields 11,283.56 MW (vs 11,285.51 MW for exact :00 join), proving that the evaluation is invariant (&lt;0.02% sensitivity) to half-hour aggregation conventions.</li>
             </ul>
           </div>
 
@@ -189,27 +193,17 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <Layers size={15} color="var(--amber)" />
-              6. Systematic Forecast Bias: Transmission Metering vs Embedded Wind
+              6. Systematic Forecast Bias &amp; Scope Considerations
             </h3>
-            <div style={{
-              padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)',
-              fontStyle: 'italic', color: '#fef3c7', fontSize: 11, lineHeight: 1.5
-            }}>
-              "The day-ahead forecast systematically over-predicted in Jan 2026, with an average bias of +1,746 MW and 84.7% of hourly intervals over-forecast. Here is the physical and market evidence."
-            </div>
+            <p>
+              The day-ahead forecast systematically over-predicted in January 2026, with an average bias of <strong style={{ color: 'var(--amber)' }}>+1,746 MW</strong> and 84.7% of hourly intervals over-forecast. Several factors explain this finding:
+            </p>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <li>
-                <strong style={{ color: '#fff' }}>WINDFOR Coverage:</strong> National Grid ESO (NESO) produces national wind forecasts covering <em>both</em> transmission-connected offshore/onshore wind farms and distribution-connected (embedded) wind generation across Great Britain (~30+ GW total capacity).
+                <strong style={{ color: '#fff' }}>Data Integrity Confirmed:</strong> Hourly mean actuals <code>(SP1+SP2)/2</code> of 11,283.6 MW match exact :00 actuals of 11,285.5 MW within 1.95 MW, confirming that this is an authentic difference rather than an alignment or summing error.
               </li>
               <li>
-                <strong style={{ color: '#fff' }}>FUELHH Coverage:</strong> The Elexon FUELHH stream meters power injected by Balancing Mechanism (BM) Units directly into the National Electricity Transmission System (NETS).
-              </li>
-              <li>
-                <strong style={{ color: '#fff' }}>The Embedded Wind Gap:</strong> Embedded wind farms (~5–7 GW capacity in GB) connect directly to regional 33kV/11kV Distribution Network Operators (DNOs). At transmission level, embedded generation manifests as "negative demand" at Grid Supply Points rather than metered FUELHH generation, creating the structural ~1.5–2 GW delta.
-              </li>
-              <li>
-                <strong style={{ color: '#fff' }}>Half-Hour Averaging Verification:</strong> Resampling 30-minute actuals by taking the hourly mean <code>(SP1 + SP2) / 2</code> yields <strong>11,283.56 MW</strong> (vs 11,285.51 MW for exact :00 join), proving the systematic bias is a physical scope difference rather than an alignment artifact.
+                <strong style={{ color: '#fff' }}>Likely Scope Distinction (Unverified with public BMRS data alone):</strong> Elexon BMRS documentation for <code>FUELHH</code> defines <code>fuelType=WIND</code> as metered generation from Balancing Mechanism Units connected to the National Electricity Transmission System. Conversely, National Grid ESO national wind forecasts (<code>WINDFOR</code>) model total national-level wind output, which typically includes distributed / embedded wind farms connected to regional distribution networks (DNOs). Because embedded generation is not metered in FUELHH (acting as negative demand at Grid Supply Points), national forecasts will structurally exceed transmission-metered actuals. This is a likely candidate explanation based on GB market architecture, though unverified within the scope of this dataset.
               </li>
             </ul>
           </div>
@@ -218,13 +212,13 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <ShieldAlert size={15} color="var(--emerald)" />
-              7. Statistical Robustness: Window Benchmark vs Single-Day Buffer
+              7. Statistical Robustness &amp; In-Sample Limitation Caveat
             </h3>
             <p>
-              The What-If Calculator defaults to the <strong style={{ color: 'var(--cyan)' }}>Window Benchmark Buffer (4,154 MW, N=744)</strong>. A full-month sample captures the true empirical error distribution across diverse weather regimes (high-pressure calms, Atlantic storms, ramp rates).
+              The What-If Calculator defaults to the <strong style={{ color: 'var(--cyan)' }}>Window Benchmark Buffer (4,154 MW, N=744)</strong>. A full-month sample captures the empirical error distribution across diverse weather regimes.
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              While a single-day buffer (N=24 points, e.g. 1,543 MW on 2 Jan) can be toggled for day-specific inspection, 24 points are statistically noisy and vulnerable to intra-day variance. Trading desks are advised to base baseline risk reserves on the full-window empirical P90.
+              <strong style={{ color: '#fff' }}>In-Sample Caveat:</strong> The risk buffers evaluated here are computed in-sample across January 2026. In a live trading production pipeline, the risk buffer would be calibrated on trailing historical windows (e.g. rolling 30–90 days) and tested out-of-sample against forward delivery days.
             </p>
           </div>
 

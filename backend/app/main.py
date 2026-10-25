@@ -78,7 +78,7 @@ def get_metadata():
     meta["gate_closures_info"] = {
         "EPEX_GB": "09:20 London time (default)",
         "N2EX": "09:50 London time",
-        "Legacy_outdated": "11:00 London time"
+        "Sensitivity_later_cutoff": "11:00 London time"
     }
     meta["error_convention"] = "error = forecast - actual (Positive: over-forecast/shortfall; Negative: under-forecast/surplus)"
     return meta

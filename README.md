@@ -1,6 +1,6 @@
 # GB Wind Day-Ahead Procurement & Forecast Risk Pilot
 
-A production-grade web application and analytical pilot built for a UK electricity utility day-ahead trading desk. The platform evaluates national-level Great Britain (GB) wind generation forecasts against outturn actuals from **Elexon BMRS**, quantifies forecast uncertainty, strictly eliminates look-ahead bias at day-ahead gate closure, and provides a quantitative **P90 Risk Buffer** to inform non-wind procurement decisions.
+A full-stack analytical web application and pilot built for a UK electricity utility day-ahead trading desk. The platform evaluates national-level Great Britain (GB) wind generation forecasts against outturn actuals from **Elexon BMRS**, quantifies forecast uncertainty, strictly eliminates look-ahead bias at day-ahead gate closure, and provides a quantitative **P90 Risk Buffer** to inform non-wind procurement decisions.
 
 ---
 
@@ -76,9 +76,9 @@ In accordance with the hiring challenge guidelines, **AI tools (Google DeepMind 
 
 ### 1. Gate Closure Timings (London Time)
 In Great Britain, wholesale power exchanges operate uncoupled day-ahead auctions with specific gate closure times:
-* **EPEX SPOT GB:** Gate closure is **09:20 London time** on Day D-1 (**Default in this app**).
-* **Nord Pool N2EX:** Gate closure is **09:50 London time** on Day D-1.
-* **Legacy 11:00 London Time:** **OUTDATED**. Prior to Brexit (January 2021) and the cessation of Single Day-Ahead Coupling (SDAC), GB auction gates closed at 11:00. The platform supports testing this legacy cutoff to evaluate historical changes.
+* **EPEX SPOT GB:** Auction order book closes at **09:20 London time** on Day D-1 (**Default in this app**).
+* **Nord Pool N2EX:** Auction order book closes at **09:50 London time** on Day D-1.
+* **11:00 Later Cut-off Sensitivity:** Provided as a configurable sensitivity benchmark to evaluate forecast error improvements if decision gates are delayed.
 * *Timezone Note:* London time (`Europe/London`) is strictly utilized for calendar days and cutoffs. In January, London time equals UTC (GMT+0), but daylight saving conversions are handled correctly in code via tz-aware timestamps.
 
 ### 2. Strict Look-Ahead Isolation (Zero Leakage)
@@ -89,30 +89,30 @@ In Great Britain, wholesale power exchanges operate uncoupled day-ahead auctions
 
 ### 3. Resolution Mismatch & Hourly Alignment
 * **Actuals (`FUELHH`):** 30-minute settlement period resolution (:00 and :30 timestamps). Filtered for `fuelType == "WIND"`.
-* **Forecasts (`WINDFOR`):** 60-minute hourly resolution (:00 timestamps). Published up to 8 times daily by NESO.
+* **Forecasts (`WINDFOR`):** 60-minute hourly resolution (:00 timestamps). Exactly **9 discrete publish runs per day** are detected in the dataset (`02:30, 04:30, 07:30, 09:30, 11:30, 12:25, 15:30, 18:30, 22:30 UTC`).
 * **Join Rule:** Data is aligned strictly on **exact `startTime`** (:00 on the hour), yielding 24 exact hourly points per day ($n=744$ across January).
-* **Sensitivity Verification:** Resampling half-hourly actuals to hourly means `(SP1 + SP2) / 2` yields a mean actual of **11,283.56 MW** compared to **11,285.51 MW** for the exact `:00` join (a 1.95 MW / 0.017% difference). This confirms that hourly metrics are mathematically robust and invariant to half-hour aggregation conventions.
+* **Sensitivity Verification:** Resampling half-hourly actuals to hourly means `(SP1 + SP2) / 2` yields a mean actual of **11,283.56 MW** compared to **11,285.51 MW** for the exact `:00` join (a 1.95 MW / 0.017% difference). This confirms that hourly metrics are robust and invariant to half-hour aggregation conventions.
 
-### 4. Error Sign Convention & Financial Asymmetry
+### 4. Error Sign Convention & Financial Asymmetry Note
 $$\text{Error} = \text{Forecast} - \text{Actual}$$
-* **Positive Error ($>0$):** Wind was over-forecasted. Utility under-procures non-wind supply, creating a generation shortfall exposed to volatile Balancing Mechanism System Buy Prices (Cash-Out).
-* **Negative Error ($<0$):** Wind was under-forecasted. Utility had surplus generation, which can be unwound or spilled with lower asymmetric penalty.
+* **Positive Error ($>0$):** Wind was over-forecasted. Utility under-procures non-wind supply, creating a generation shortfall in real-time.
+* **Negative Error ($<0$):** Wind was under-forecasted. Utility had surplus generation.
+* *Note on market asymmetry:* While GB imbalance cashout prices are typically asymmetric (system buy price during short periods is historically higher than system sell price during surplus), financial cashout settlement price analysis is explicitly out of scope as no price data is ingested.
 
 ### 5. P90 Risk Buffer Formulation & Sample Size Robustness
 $$\text{Buffer}_{\text{P90}} = \max(0, \text{P90 of Error})$$
 * **Physical Meaning:** "To be ~90% confident that wind will not fall short of plan, assume available wind is up to $\text{Buffer}_{\text{P90}}$ MW lower than forecast."
 * **Window Benchmark vs Day-Specific Buffer:** The What-If Calculator defaults to the **Window Benchmark Buffer (4,154 MW, $n=744$)**. Basing procurement on the full-month empirical distribution captures broad weather regimes (stagnant calms, frontal ramps, winter storms). A single-day buffer (e.g. 1,543 MW on 2 Jan, $n=24$) is statistically sensitive to intra-day sample variance.
+* **Gross Shortfall Volume vs Net Bias Volume:** The headline energy shortfall is **1,401.8 GWh** (gross sum across over-forecast intervals only). The net forecast error volume across all intervals is ~1,299.0 GWh.
+* **In-Sample Limitation Caveat:** The risk buffers evaluated here are computed in-sample across January 2026. In production, risk buffers would be calibrated on rolling historical trailing windows (e.g. 30–90 days) and tested out-of-sample against live forward delivery days.
 * In the **What-If Tool**:
   $$\text{Unadjusted Non-Wind Needed} = \max(0, \text{Demand} - \text{Forecast})$$
   $$\text{Risk-Adjusted Non-Wind Needed} = \max(0, \text{Demand} - (\text{Forecast} - \text{Buffer}_{\text{P90}}))$$
 
-### 6. Systematic Bias Analysis: Transmission vs Embedded Wind
-The pilot identifies an empirical mean forecast bias of **+1,746 MW** (mean forecast of 13,031 MW vs 11,286 MW actuals, with 84.7% of intervals over-forecast). If a reviewer asks whether this is real or a data artifact, state directly:
-> *"The day-ahead forecast systematically over-predicted in Jan 2026, and here is the physical and market evidence:"*
-
-* **WINDFOR Scope:** National Grid ESO forecasts national wind generation, encompassing **both transmission-connected and embedded (distribution-connected)** wind turbines across Great Britain (~30+ GW total capacity).
-* **FUELHH Scope:** Elexon FUELHH meters only BM-registered units connected directly to the National Electricity Transmission System (NETS).
-* **Embedded Generation:** GB has roughly 5–7 GW of onshore wind farms connected to regional 33kV/11kV Distribution Network Operators (DNOs). This embedded power reduces demand met by the transmission grid ("negative demand" at Grid Supply Points) rather than appearing as metered generation in FUELHH, accounting for the structural ~1.5–2.0 GW gap.
+### 6. Systematic Bias Analysis & Scope Considerations
+The day-ahead forecast systematically over-predicted in January 2026, with an average bias of **+1,746 MW** and 84.7% of hourly intervals over-forecast. Several factors explain this finding:
+* **Data Integrity Confirmed:** Hourly mean actuals `(SP1+SP2)/2` of 11,283.6 MW match exact :00 actuals of 11,285.5 MW within 1.95 MW, confirming that this is an authentic difference rather than an alignment or summing error.
+* **Likely Scope Distinction (Unverified with public BMRS data alone):** Elexon BMRS documentation for `FUELHH` defines `fuelType=WIND` as metered generation from Balancing Mechanism Units connected directly to the National Electricity Transmission System. Conversely, National Grid ESO national wind forecasts (`WINDFOR`) model total national-level wind output, which typically includes distributed / embedded wind farms connected to regional distribution networks (DNOs). Because embedded generation is not metered in FUELHH (acting as negative demand at Grid Supply Points), national forecasts will structurally exceed transmission-metered actuals. This is a likely candidate explanation based on GB market architecture, though unverified within the scope of this dataset.
 
 ### 7. Separating Systematic Bias from Meteorological Spread ($P_{50}$ vs $P_{90}$)
 The full-window **P90 Buffer (4,154 MW)** decomposes into two distinct mathematical components:
@@ -136,7 +136,7 @@ A flat MW buffer treats all wind days identically. In reality, forecast error va
 ## 🚀 How to Run Locally
 
 ### Prerequisites
-* Python 3.12+ (Python 3.14 compatible)
+* Python 3.10+ / 3.12+
 * Node.js v18+ and npm
 
 ### 1. Backend Setup
@@ -172,6 +172,13 @@ npm run dev
 ```
 Open `http://localhost:5173` in your browser. The Vite development proxy forwards all `/api/*` calls directly to the FastAPI backend.
 
+### 3. Data Refresh & Provenance (Optional)
+The repository includes cached Elexon market data in `data/` (`actuals.csv`, `forecasts.csv`, `metadata.json`). To re-fetch or update raw data directly from the official Elexon BMRS API:
+```bash
+python scripts/fetch_data.py
+```
+This script queries the Elexon BMRS v1 streaming endpoints (`/datasets/FUELHH/stream` and `/datasets/WINDFOR/stream`) with exponential backoff, validates UTC timestamps, deduplicates records, and refreshes `data/metadata.json`.
+
 ---
 
 ## 🐳 Running with Docker & Docker Compose
@@ -200,7 +207,7 @@ The application is architected to deploy directly to **Vercel**:
 * **Frontend:** Vite production bundle served via `@vercel/static-build` from `frontend/dist`.
 * **Backend:** FastAPI serverless application executed via `api/index.py` with `@vercel/python`.
 * **Data:** The cached `data/` directory (`actuals.csv`, `forecasts.csv`, `metadata.json`) is committed into the repository, ensuring zero cold-start Elexon API roundtrips.
-* **Live Deployment Link:** `https://gb-wind-dayahead-pilot.vercel.app` *(placeholder / live deployment URL)*
+* **Live Deployment Link:** `https://kjhwr-peach.vercel.app`
 
 ---
 
@@ -212,7 +219,7 @@ pytest backend/tests -v
 ```
 
 ### Test Coverage Highlights:
-1. `test_excludes_forecasts_after_cutoff`: Proves mathematically that no forecast published after gate closure ($D-1$ 09:20) is ever selected.
+1. `test_excludes_forecasts_after_cutoff`: Verifies that no forecast published after gate closure ($D-1$ 09:20) is ever selected.
 2. `test_picks_latest_before_cutoff`: Verifies that the newest available forecast run prior to cut-off is chosen.
 3. `test_inclusive_cutoff`: Verifies that forecasts published precisely at the cut-off boundary are included.
 4. `test_error_sign_convention`: Verifies that $\text{error} = \text{forecast} - \text{actual}$ produces positive values for over-forecasts and negative values for under-forecasts.
