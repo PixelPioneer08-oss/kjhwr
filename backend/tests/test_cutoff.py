@@ -196,3 +196,62 @@ def test_metrics_calculation_and_p90_buffer():
     assert m["total_overforecast_mwh"] == 700.0
     # buffer_p90 is max(0, P90)
     assert m["buffer_p90"] > 0
+
+
+def test_missing_forecast_interval_handled_cleanly():
+    """Verify that missing forecast intervals do not cause exceptions or invented values."""
+    target_dt1 = pd.Timestamp("2026-01-02 12:00:00+00:00")
+    target_dt2 = pd.Timestamp("2026-01-02 13:00:00+00:00")
+    
+    # Actuals exist for both 12:00 and 13:00
+    actuals = pd.DataFrame([
+        {"startTime": target_dt1, "generation": 10000.0},
+        {"startTime": target_dt2, "generation": 11000.0},
+    ])
+    
+    # Forecast only exists for 12:00; 13:00 is missing
+    forecasts = pd.DataFrame([
+        {"startTime": target_dt1, "publishTime": pd.Timestamp("2026-01-01 07:30:00+00:00"), "generation": 10500.0},
+    ])
+    
+    result = align_and_evaluate(
+        actuals_df=actuals,
+        forecasts_df=forecasts,
+        mode="gate",
+        cutoff="09:20",
+        decision_from=date(2026, 1, 1),
+        decision_to=date(2026, 1, 1)
+    )
+    
+    # Strictly matched intervals: exactly 1 interval evaluated, no synthetic interpolation
+    assert len(result) == 1
+    assert result.iloc[0]["startTime"] == target_dt1
+    assert result.iloc[0]["generation_act"] == 10000.0
+    assert result.iloc[0]["generation_fc"] == 10500.0
+
+
+def test_timezone_conversion_london_to_utc():
+    """Verify that Europe/London civil cutoffs map accurately to UTC."""
+    # In January, Europe/London is UTC (GMT)
+    target_dt = pd.Timestamp("2026-01-02 15:00:00+00:00")
+    actuals = pd.DataFrame([{"startTime": target_dt, "generation": 12000.0}])
+    
+    # Two forecasts: one at 09:15 UTC, one at 09:25 UTC
+    forecasts = pd.DataFrame([
+        {"startTime": target_dt, "publishTime": pd.Timestamp("2026-01-01 09:15:00+00:00"), "generation": 12200.0},
+        {"startTime": target_dt, "publishTime": pd.Timestamp("2026-01-01 09:25:00+00:00"), "generation": 12800.0},
+    ])
+    
+    result = align_and_evaluate(
+        actuals_df=actuals,
+        forecasts_df=forecasts,
+        mode="gate",
+        cutoff="09:20",
+        decision_from=date(2026, 1, 1),
+        decision_to=date(2026, 1, 1)
+    )
+    
+    assert len(result) == 1
+    assert result.iloc[0]["publishTime"] == pd.Timestamp("2026-01-01 09:15:00+00:00")
+    assert result.iloc[0]["generation_fc"] == 12200.0
+

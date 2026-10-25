@@ -134,7 +134,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
               </div>
             </div>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>
-              *Note on market asymmetry: While GB cash-out prices are typically asymmetric (system buy price during short periods is historically higher than system sell price during surplus), financial settlement price modeling is explicitly out of scope as no price data is ingested.
+              *Scope Boundary: Forecast error evaluates physical volume mismatch in MW and MWh. Financial cashout settlement price analysis (SSP/SBP) is outside the scope of the available data. The risk buffer informs volume procurement hedging decisions and mitigates shortfall exposure—it is not an automated guarantee of financial savings.
             </p>
           </div>
 
@@ -212,13 +212,13 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
               <ShieldAlert size={15} color="var(--emerald)" />
-              7. Statistical Robustness &amp; In-Sample Limitation Caveat
+              7. Empirical P90 Calculation &amp; In-Sample Caveat
             </h3>
             <p>
               The What-If Calculator defaults to the <strong style={{ color: 'var(--cyan)' }}>Window Benchmark Buffer (4,154 MW, N=744)</strong>. A full-month sample captures the empirical error distribution across diverse weather regimes.
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              <strong style={{ color: '#fff' }}>In-Sample Caveat:</strong> The risk buffers evaluated here are computed in-sample across January 2026. In a live trading production pipeline, the risk buffer would be calibrated on trailing historical windows (e.g. rolling 30–90 days) and tested out-of-sample against forward delivery days.
+              <strong style={{ color: '#fff' }}>Empirical Nature &amp; Limitations:</strong> The 4,154 MW benchmark is an empirical metric calculated from the January 2026 evaluation window. It is not an automatic guarantee of 90% coverage in future out-of-sample months, as future performance is subject to seasonal wind regimes, weather conditions, and sample representativeness. In production, risk buffers would be calibrated over rolling trailing windows (e.g. 30–90 days) and tested out-of-sample.
             </p>
           </div>
 

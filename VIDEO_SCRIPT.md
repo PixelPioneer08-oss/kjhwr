@@ -16,62 +16,60 @@ This script provides word-for-word talking points, screen actions, and visual cu
 **Goal:** Impress the client with how this tool de-risks day-ahead power purchasing.
 
 ### [0:00 – 1:15] The Commercial Problem & Context
-> *"Good morning. Today I am presenting our Day-Ahead Wind Forecast Evaluation and Risk Buffer platform, tailored specifically for your GB wholesale power trading desk.*
+> *"Good morning. Today I am presenting our Day-Ahead Wind Forecast Evaluation and Risk Buffer platform, tailored specifically for your GB wholesale power trading desk.
 >
-> *Every day at Day D-1, your desk faces a high-stakes commercial decision: you must decide how much non-wind wholesale electricity—such as CCGT thermal power or interconnector imports—to procure in the day-ahead auction before the EPEX SPOT 09:20 gate closure.*
+> *Every day at Day D-1, your desk faces a critical commercial decision: you must decide how much non-wind wholesale electricity—such as CCGT thermal power or interconnector imports—to procure in the day-ahead auction before gate closure (such as EPEX SPOT at 09:20 London time).
 >
-> *Because wind is weather-dependent, your procurement depends entirely on NESO's WINDFOR forecasts. But wind forecast errors are financially asymmetric:*
-> * If wind is **under-forecasted**, you have surplus power. That surplus can be easily sold back or spilled at low cost.
-> * But if wind is **over-forecasted**, you under-buy non-wind power day-ahead. During delivery, you face a physical power deficit and are exposed to the **System Buy Price (Cash-Out)** in the Balancing Mechanism—often spiking to hundreds of pounds per MWh.
+> *Because wind is weather-dependent, your procurement decisions rely on National Grid ESO's WINDFOR forecasts. When wind is over-forecasted, you under-buy non-wind power day-ahead and face physical delivery shortfalls in the Balancing Mechanism.
 >
-> *Our platform solves this problem: it isolates the exact forecast available at your gate closure, quantifies the forecast error, and calculates a quantitative **P90 Risk Buffer** to protect your balance sheet."*
+> *It's important to clarify upfront: this platform analyzes physical volume risk in megawatts and megawatt-hours. Because imbalance settlement prices are outside the scope of our dataset, the risk buffer is designed to inform volume procurement and manage volume exposure—it is not an automated guarantee of financial savings.
+>
+> *Our engine isolates the exact forecast available at decision time, quantifies forecast uncertainty, and calculates an empirical P90 Risk Buffer to inform your day-ahead position."*
 
 ### [1:15 – 2:30] Dashboard Walkthrough & Live Example (Delivery Day Jan 2, 2026)
-*(Action: Open browser at `http://localhost:3000` or the live Vercel link. Point to the controls bar and KPI cards).*
+*(Action: Open browser at `https://kjhwr-peach.vercel.app`. Point to the controls bar and KPI cards).*
 
-> *"Looking at the dashboard, all data is verified real historical data from Elexon BMRS for January 2026.*
+> *"Looking at the dashboard, all data is verified real historical data from Elexon BMRS for January 2026.
 >
-> *Here on the control bar, our default cut-off is **09:20 London time**, matching the EPEX SPOT GB auction gate closure. You can also toggle to N2EX at 09:50, or inspect the outdated pre-Brexit 11:00 gate.*
+> *On the control bar, our default cut-off is **09:20 London time**, matching the EPEX SPOT GB auction order book closure. You can also select Nord Pool N2EX at 09:50, or evaluate an 11:00 Later Cut-off Sensitivity.
 >
-> *Looking across January 2026, across 744 evaluated hourly points:*
-> * Our Mean Absolute Error (MAE) is approximately **1,945 MW**, with a WAPE of **15%**.
-> * Crucially, our Mean Error (Bias) is positive: wind was over-forecasted in **62%** of intervals, resulting in over **1.2 million MWh** of cumulative generation shortfall.*
+> *Looking across January 2026, over 744 evaluated hourly delivery intervals:
+> * Our Mean Absolute Error (MAE) is **2,022 MW**, with a WAPE of **17.9%**.
+> * Crucially, our Mean Error (Bias) is positive (+1,746 MW): wind was over-forecasted in **84.7%** of intervals, representing **1.40 million MWh** of gross generation shortfall.
 >
 > *Now let's examine a specific day: **January 2, 2026**."*
 *(Action: Point to the Delivery Day Profile chart).*
 >
 > *"Here you see the hourly generation profile for delivery day **January 2, 2026**.
-> *Notice that every single hour on this day was over-forecasted—actual wind generation was ~15,000 MW against an 18,500 MW forecast, producing an MAE equal to its bias of 3,070 MW.*
-> *Across the entire month of January, the forecast displays a **+1,746 MW systematic over-prediction**, with 84.7% of hours over-forecast.*
-> *If an assessor asks whether this is real or a data issue, the answer is direct: **the day-ahead forecast systematically over-predicted in January 2026, and the data proves it**.*
-> *Part of this delta is physical: Elexon `FUELHH` meters only transmission-connected Balancing Mechanism wind units, whereas NESO's `WINDFOR` forecasts total national wind including ~5 to 7 GW of embedded distribution wind.*
-> *We verified this rigorously: resampling 30-minute actuals as an hourly mean `(SP1+SP2)/2` yields 11,283.6 MW—within 0.017% of our exact join (11,285.5 MW)—confirming this is an authentic physical scope characteristic, not an aggregation artifact."*
+> *Notice that every single hour on this day was over-forecasted—actual wind generation was ~15,000 MW against an 18,500 MW forecast, producing an MAE equal to its bias of 3,070 MW.
+> *Across the entire month of January, the forecast displays a **+1,746 MW systematic over-prediction**.
+> *Why does this gap exist? We investigated whether this was a data processing artifact. By resampling 30-minute actuals via an hourly mean `(SP1+SP2)/2`, we get 11,283.6 MW—within 0.017% of our exact :00 join (11,285.5 MW). This rules out aggregation as the cause.
+> *Instead, our leading hypothesis relates to physical scope: Elexon BMRS documentation indicates FUELHH appears to cover transmission-connected Balancing Mechanism units, whereas WINDFOR models national wind generation, which likely includes embedded distribution wind. We treat this as a plausible candidate hypothesis requiring further verification with private network data, and it's a great discussion topic on data scope."*
 
 ### [2:30 – 3:45] The P90 Risk Buffer, Bias Decomposition & Wind Regimes
 *(Action: Scroll down to the What-If Procurement Tool).*
 
-> *"To protect against this deficit, our engine computes the **P90 Risk Buffer**: `max(0, P90 of Error)`.*
-> *For the January benchmark, this whole-window buffer is **4,154 MW** across 744 hourly intervals.*
+> *"To protect against volume shortfalls, our engine computes the **P90 Risk Buffer**: `max(0, P90 of Error)`.
+> *For the January benchmark, this whole-window buffer is **4,154 MW** across the 744 hourly intervals.
 >
-> *Crucially, we separate the **systematic bias from the spread**:*
-> *Our P50 median error is **1,582 MW** (~38% of the buffer). That is the systematic part that our trading desk could de-bias in advance. The remaining **2,572 MW** (P90 − P50) represents real, irreducible meteorological spread.*
+> *We must be precise about what this number means: it is an **empirical in-sample benchmark** calculated over January 2026. It is not an automatic guarantee of 90% coverage for future months, because future weather regimes, seasonal patterns, and sample representativeness will shift the empirical tail.
 >
-> *Furthermore, a flat MW buffer ignores the level of wind—a 4 GW buffer is too large on a calm day and too tight on a storm day.*
-> *That is why our simulator includes **Proportional Scaling (30.3% of forecast)** and **Wind-Bucketed Regimes** (<8 GW: 1,887 MW buffer; >16 GW: 4,788 MW buffer).*
+> *Crucially, we separate the **systematic bias from the spread**:
+> *Our P50 median error is **1,582 MW** (~38% of the buffer). That is the predictable bias that a desk could de-bias in advance via calibration. The remaining **2,572 MW** (P90 − P50) represents stochastic meteorological spread.
 >
-> *Suppose our consumer demand is **25,000 MW**.*
-> *An unadjusted desk buys `Demand - Forecast`. When wind falls short, they face unhedged deficit volume settled at volatile cash-out prices.*
-> *Our risk-adjusted desk procures an additional reserve buffer, significantly reducing exposure to costly Balancing Mechanism deficit settlement."*
+> *Furthermore, a flat MW buffer ignores the expected level of wind. That is why our tool provides **Proportional Scaling (30.3% of forecast)** and **Wind Regimes** (<8 GW: 1,887 MW buffer; >16 GW: 4,788 MW buffer). Crucially, these regimes are bucketed strictly on the **forecast level** known at decision time, preventing any look-ahead leakage.
+>
+> *In the What-If calculator, if customer demand is **25,000 MW** and wind forecast is 13,000 MW, an unadjusted desk buys 12,000 MW of non-wind power. If wind under-delivers, they face an unhedged volume shortfall. By incorporating the P90 buffer, the desk procures a prudent reserve volume to de-risk delivery."*
 
 ### [3:45 – 4:55] Lead-Time Curve & Business Value Summary
 *(Action: Click on the 'Lead-Time Curve' tab).*
 
-> *"Finally, let's look at the **Lead-Time Curve** from 1 to 48 hours ahead.*
-> *This chart answers a key commercial question: **What is the cost of deciding a day ahead?***
-> *At an intraday horizon of 4 hours ahead, forecast MAE is only ~800 MW. By committing at the Day-Ahead gate closure (28 hours ahead), error increases substantially.*
-> *This quantifies the exact option value of holding back a portion of your flexible assets for intraday trading.*
+> *"Finally, let's look at the **Lead-Time Curve** from 1 to 48 hours ahead.
+> *This chart answers a key commercial question: **What is the operational cost of deciding day-ahead?**
+> *At an intraday horizon of 4 hours ahead, forecast MAE is only ~800 MW. At the Day-Ahead gate closure (mean lead time of 28.0 hours), error increases substantially to ~2,022 MW.
+> *This quantifies the option value of retaining flexible procurement capacity for intraday balancing.
 >
-> *In summary: this product gives your trading desk clear forecast visibility, zero look-ahead bias, and an actionable, mathematical risk buffer that mitigates exposure to volatile imbalance settlement."*
+> *In summary: this platform provides rigorous forecast filtering, transparent empirical risk buffers, and clear volume hedging insights for the day-ahead trading desk."*
 
 ---
 
@@ -112,12 +110,14 @@ This script provides word-for-word talking points, screen actions, and visual cu
 
 > *"Quality assurance is enforced through an automated Pytest suite in `backend/tests/`.*
 > *Let's run it live right now."*
-*(Point to the 16 passing tests).*
+*(Point to the 18 passing tests).*
 >
 > *Notice our key tests:*
 > * `test_excludes_forecasts_after_cutoff`: Injects synthetic forecasts before, at, and after 09:20; asserts that post-cutoff rows are strictly excluded.
-> * `test_picks_latest_before_cutoff`: Proves that among eligible versions (05:30, 07:30), the newest is chosen.
-> * `test_inclusive_cutoff`: Proves that a forecast timestamped exactly at 09:20:00 is accepted.
+> * `test_picks_latest_before_cutoff`: Verifies that among eligible versions (05:30, 07:30), the newest is chosen.
+> * `test_inclusive_cutoff`: Verifies that a forecast timestamped exactly at 09:20:00 is accepted.
+> * `test_missing_forecast_interval_handled_cleanly`: Verifies that missing intervals do not trigger exceptions or synthetic data creation.
+> * `test_timezone_conversion_london_to_utc`: Confirms Europe/London civil cutoffs map cleanly to UTC timestamps.
 > * `test_error_sign_convention`: Verifies that `Forecast - Actual` produces positive values for over-forecasts.
 > * `test_decision_window_logic` & `test_horizon_mode`: Verifies D-1 mapping and fixed lead times.
 > * `test_api_endpoints_and_errors`: Verifies input validation, 422 for malformed cutoffs, and 404 for missing ranges."*

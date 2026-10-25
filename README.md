@@ -93,18 +93,18 @@ In Great Britain, wholesale power exchanges operate uncoupled day-ahead auctions
 * **Join Rule:** Data is aligned strictly on **exact `startTime`** (:00 on the hour), yielding 24 exact hourly points per day ($n=744$ across January).
 * **Sensitivity Verification:** Resampling half-hourly actuals to hourly means `(SP1 + SP2) / 2` yields a mean actual of **11,283.56 MW** compared to **11,285.51 MW** for the exact `:00` join (a 1.95 MW / 0.017% difference). This confirms that hourly metrics are robust and invariant to half-hour aggregation conventions.
 
-### 4. Error Sign Convention & Financial Asymmetry Note
+### 4. Forecast Error vs Financial Exposure (Scope Boundary)
 $$\text{Error} = \text{Forecast} - \text{Actual}$$
-* **Positive Error ($>0$):** Wind was over-forecasted. Utility under-procures non-wind supply, creating a generation shortfall in real-time.
-* **Negative Error ($<0$):** Wind was under-forecasted. Utility had surplus generation.
-* *Note on market asymmetry:* While GB imbalance cashout prices are typically asymmetric (system buy price during short periods is historically higher than system sell price during surplus), financial cashout settlement price analysis is explicitly out of scope as no price data is ingested.
+* **Positive Error ($>0$):** Wind was over-forecasted. The utility under-procures non-wind generation day-ahead, creating a physical delivery shortfall that must be resolved in real-time balancing.
+* **Negative Error ($<0$):** Wind was under-forecasted. The utility holds surplus physical power.
+* **Physical Error vs Financial Exposure:** Forecast error quantifies **physical volume mismatch (in MW and MWh)**. It does not directly quantify financial cashout cost (£/MWh) or overall balance-sheet impact. In GB wholesale electricity markets, volume imbalances settle against the Balancing Mechanism System Buy Price (SBP) or System Sell Price (SSP). Because cashout price datasets are outside the scope of this pilot, **the P90 risk buffer is designed solely to inform volume procurement hedging decisions and mitigate physical delivery shortfalls—not as an automated guarantee of financial savings**.
 
-### 5. P90 Risk Buffer Formulation & Sample Size Robustness
+### 5. P90 Risk Buffer Formulation & In-Sample Representation
 $$\text{Buffer}_{\text{P90}} = \max(0, \text{P90 of Error})$$
 * **Physical Meaning:** "To be ~90% confident that wind will not fall short of plan, assume available wind is up to $\text{Buffer}_{\text{P90}}$ MW lower than forecast."
 * **Window Benchmark vs Day-Specific Buffer:** The What-If Calculator defaults to the **Window Benchmark Buffer (4,154 MW, $n=744$)**. Basing procurement on the full-month empirical distribution captures broad weather regimes (stagnant calms, frontal ramps, winter storms). A single-day buffer (e.g. 1,543 MW on 2 Jan, $n=24$) is statistically sensitive to intra-day sample variance.
+* **Empirical Nature & In-Sample Caveat:** The 4,154 MW benchmark is an **empirical metric computed strictly from the January 2026 evaluation window**. It is **not automatically a guarantee of 90% coverage in future out-of-sample months**. The future coverage rate will naturally be influenced by seasonal wind shifts, changing synoptic weather regimes, and the overall representativeness of the historical sample. In a production pipeline, buffers would be calibrated over rolling trailing windows (e.g. 30–90 days) and tested out-of-sample against live forward delivery days.
 * **Gross Shortfall Volume vs Net Bias Volume:** The headline energy shortfall is **1,401.8 GWh** (gross sum across over-forecast intervals only). The net forecast error volume across all intervals is ~1,299.0 GWh.
-* **In-Sample Limitation Caveat:** The risk buffers evaluated here are computed in-sample across January 2026. In production, risk buffers would be calibrated on rolling historical trailing windows (e.g. 30–90 days) and tested out-of-sample against live forward delivery days.
 * In the **What-If Tool**:
   $$\text{Unadjusted Non-Wind Needed} = \max(0, \text{Demand} - \text{Forecast})$$
   $$\text{Risk-Adjusted Non-Wind Needed} = \max(0, \text{Demand} - (\text{Forecast} - \text{Buffer}_{\text{P90}}))$$
@@ -218,12 +218,14 @@ Run all automated unit and integration tests:
 pytest backend/tests -v
 ```
 
-### Test Coverage Highlights:
+### Test Coverage Highlights (18 Tests):
 1. `test_excludes_forecasts_after_cutoff`: Verifies that no forecast published after gate closure ($D-1$ 09:20) is ever selected.
 2. `test_picks_latest_before_cutoff`: Verifies that the newest available forecast run prior to cut-off is chosen.
 3. `test_inclusive_cutoff`: Verifies that forecasts published precisely at the cut-off boundary are included.
-4. `test_error_sign_convention`: Verifies that $\text{error} = \text{forecast} - \text{actual}$ produces positive values for over-forecasts and negative values for under-forecasts.
-5. `test_decision_window_logic`: Verifies that $D-1$ decision windows map to delivery day $D$ ($D-1 + 1$ day).
-6. `test_horizon_mode`: Verifies fixed lead-time filtering ($T - h$ hours).
-7. `test_metrics_calculation_and_p90_buffer`: Verifies MAE, RMSE, WAPE, MAPE, and P90 buffer calculations against synthetic fixtures.
-8. `test_api_endpoints_and_errors`: Tests FastAPI endpoints, 422 validation for malformed inputs, and 404 for empty query ranges.
+4. `test_missing_forecast_interval_handled_cleanly`: Verifies that missing forecast intervals do not cause exceptions, null errors, or fabricated synthetic points.
+5. `test_timezone_conversion_london_to_utc`: Verifies that civil cutoffs specified in `Europe/London` time are converted accurately to UTC and properly filter forecasts.
+6. `test_error_sign_convention`: Verifies that $\text{error} = \text{forecast} - \text{actual}$ produces positive values for over-forecasts and negative values for under-forecasts.
+7. `test_decision_window_logic`: Verifies that $D-1$ decision windows map to delivery day $D$ ($D-1 + 1$ day).
+8. `test_horizon_mode`: Verifies fixed lead-time filtering ($T - h$ hours).
+9. `test_metrics_calculation_and_p90_buffer`: Verifies MAE, RMSE, WAPE, MAPE, and P90 buffer calculations against synthetic fixtures.
+10. `test_api_endpoints_and_errors`: Tests FastAPI endpoints, 422 validation for malformed inputs, and 404 for empty query ranges.
