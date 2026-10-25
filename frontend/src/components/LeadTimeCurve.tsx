@@ -1,178 +1,102 @@
 import React from 'react';
-import { 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  Legend, 
-  CartesianGrid, 
-  ReferenceLine 
-} from 'recharts';
-import { TrendingDown, Info, HelpCircle } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ReferenceLine } from 'recharts';
 import { HorizonPoint } from '../types';
 
-interface LeadTimeCurveProps {
+interface Props {
   curveData: HorizonPoint[];
   currentLeadTime: number;
   isLoading: boolean;
 }
 
-export const LeadTimeCurve: React.FC<LeadTimeCurveProps> = ({ 
-  curveData, 
-  currentLeadTime, 
-  isLoading 
-}) => {
-  // Find reference points
-  const pIntraday = curveData.find((p) => p.horizon_hours === 4);
-  const pDayAhead = curveData.find((p) => Math.round(p.horizon_hours) === Math.round(currentLeadTime)) || 
-                    curveData.find((p) => p.horizon_hours === 24);
+const HorizonTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload as HorizonPoint;
+  return (
+    <div style={{ background: '#0d1117', border: '1px solid #1e2d45', borderRadius: 10, padding: '12px 16px', minWidth: 210, boxShadow: '0 8px 32px rgba(0,0,0,0.6)', fontSize: 12 }}>
+      <div style={{ fontWeight: 700, color: '#f0f6ff', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid #1e2d45' }}>
+        {label}h Lead Time
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+        <span style={{ color: '#06b6d4' }}>MAE:</span>
+        <strong style={{ fontFamily: 'var(--mono)' }}>{d.mae?.toLocaleString()} MW</strong>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+        <span style={{ color: '#818cf8' }}>RMSE:</span>
+        <strong style={{ fontFamily: 'var(--mono)' }}>{d.rmse?.toLocaleString()} MW</strong>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, paddingTop: 6, borderTop: '1px solid #1e2d45' }}>
+        <span style={{ color: '#f59e0b' }}>P90 Buffer:</span>
+        <strong style={{ fontFamily: 'var(--mono)' }}>{d.buffer_p90?.toLocaleString()} MW</strong>
+      </div>
+      <div style={{ fontSize: 11, color: '#4a5568', marginTop: 6 }}>n = {d.n} intervals</div>
+    </div>
+  );
+};
 
-  const accuracyLoss = pDayAhead && pIntraday && pIntraday.mae > 0
-    ? Math.round(((pDayAhead.mae - pIntraday.mae) / pIntraday.mae) * 100)
-    : 0;
+export const LeadTimeCurve: React.FC<Props> = ({ curveData, currentLeadTime, isLoading }) => {
+  const at4h  = curveData.find(p => p.horizon_hours === 4);
+  const atDA  = curveData.find(p => p.horizon_hours === Math.round(currentLeadTime)) || curveData.find(p => p.horizon_hours === 24);
+  const loss  = atDA && at4h && at4h.mae > 0 ? Math.round(((atDA.mae - at4h.mae) / at4h.mae) * 100) : null;
 
   return (
-    <div className="card space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
-        <div className="flex items-center gap-2">
-          <TrendingDown className="w-5 h-5 text-cyan-400" />
-          <div>
-            <h3 className="text-base font-semibold text-white">
-              Forecast Degradation vs Decision Lead Time (1h – 48h)
-            </h3>
-            <p className="text-xs text-text-secondary">
-              Evaluates quantitative error increase as purchase decisions are made further in advance of delivery
-            </p>
-          </div>
+    <div className="chart-card">
+      <div className="chart-header">
+        <div>
+          <div className="chart-title">Forecast Error vs. Decision Lead Time (1h – 48h Horizon)</div>
+          <div className="chart-sub">Shows accuracy degradation as purchase decisions are committed further from delivery</div>
         </div>
-
-        {pDayAhead && pIntraday && (
-          <div className="px-3 py-1.5 rounded-lg bg-bg-surface-elevated border border-border-subtle text-xs">
-            <span className="text-text-muted">Day-Ahead vs 4h Intraday Loss: </span>
-            <span className="font-mono font-bold text-amber-400">+{accuracyLoss}% MAE</span>
+        {loss !== null && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ background: 'var(--amber-dim)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius)', padding: '6px 12px', fontSize: 12 }}>
+              Day-Ahead MAE vs 4h: <strong style={{ fontFamily: 'var(--mono)', color: 'var(--amber)' }}>+{loss}%</strong>
+            </div>
+            {at4h && <div style={{ background: 'var(--cyan-dim)', border: '1px solid rgba(6,182,212,0.3)', borderRadius: 'var(--radius)', padding: '6px 12px', fontSize: 12 }}>
+              4h MAE: <strong style={{ fontFamily: 'var(--mono)', color: 'var(--cyan)' }}>{at4h.mae?.toLocaleString()} MW</strong>
+            </div>}
           </div>
         )}
       </div>
-
-      {isLoading ? (
-        <div className="h-72 flex items-center justify-center text-xs text-text-muted">
-          Computing horizon curve for h = 1..48 hours...
-        </div>
-      ) : (
-        <div className="h-72 w-full pt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={curveData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis 
-                dataKey="horizon_hours" 
-                stroke="#64748b" 
-                tick={{ fill: '#94a3b8', fontSize: 11 }}
-                unit="h"
-              />
-              <YAxis 
-                stroke="#64748b" 
-                tick={{ fill: '#94a3b8', fontSize: 11 }}
-                unit=" MW"
-                width={70}
-              />
-              <Tooltip
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload as HorizonPoint;
-                    return (
-                      <div className="bg-[#0f172a] border border-[#334155] rounded-lg p-3 shadow-xl text-xs space-y-1.5 min-w-[200px]">
-                        <p className="font-semibold text-white border-b border-border-subtle pb-1">
-                          Decision Lead Time: {label} Hours Ahead
-                        </p>
-                        <div className="flex justify-between">
-                          <span className="text-cyan-400">MAE:</span>
-                          <span className="font-mono font-bold text-white">{data.mae} MW</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-indigo-400">RMSE:</span>
-                          <span className="font-mono font-bold text-white">{data.rmse} MW</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-amber-400">P90 Risk Buffer:</span>
-                          <span className="font-mono font-bold text-white">{data.buffer_p90} MW</span>
-                        </div>
-                        <div className="flex justify-between text-[11px] text-text-muted pt-1 border-t border-border-subtle/50">
-                          <span>Evaluated Sample Size:</span>
-                          <span className="font-mono text-text-secondary">{data.n} points</span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-              
-              {currentLeadTime > 0 && (
-                <ReferenceLine 
-                  x={Math.round(currentLeadTime)} 
-                  stroke="#f59e0b" 
-                  strokeDasharray="4 4"
-                  label={{ 
-                    value: `Avg Day-Ahead Gate (~${Math.round(currentLeadTime)}h)`, 
-                    fill: '#f59e0b', 
-                    fontSize: 10,
-                    position: 'top'
-                  }} 
-                />
-              )}
-
-              <Line 
-                type="monotone" 
-                dataKey="mae" 
-                name="MAE (MW)" 
-                stroke="#06b6d4" 
-                strokeWidth={2.5} 
-                dot={false}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="rmse" 
-                name="RMSE (MW)" 
-                stroke="#818cf8" 
-                strokeWidth={2} 
-                dot={false}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="buffer_p90" 
-                name="P90 Risk Buffer (MW)" 
-                stroke="#f59e0b" 
-                strokeWidth={2} 
-                strokeDasharray="5 3"
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs">
-        <div className="p-2.5 rounded-lg bg-bg-surface-elevated/40 border border-border-subtle">
-          <span className="font-semibold text-text-primary block">Intraday Trading (1-4h ahead)</span>
-          <p className="text-[11px] text-text-muted mt-1">
-            Short-term numerical weather prediction has updated ramp timing; lowest MAE ({pIntraday?.mae ?? 800} MW) and minimum risk buffer required.
-          </p>
-        </div>
-        <div className="p-2.5 rounded-lg bg-bg-surface-elevated/40 border border-border-subtle">
-          <span className="font-semibold text-amber-300 block">Day-Ahead Gate (~24-30h ahead)</span>
-          <p className="text-[11px] text-text-muted mt-1">
-            Current auction commitment window. Forecast error rises significantly due to weather front uncertainty, requiring a larger P90 buffer.
-          </p>
-        </div>
-        <div className="p-2.5 rounded-lg bg-bg-surface-elevated/40 border border-border-subtle">
-          <span className="font-semibold text-text-primary block">Value of Flexibility</span>
-          <p className="text-[11px] text-text-muted mt-1">
-            Quantifies the commercial option value of holding non-wind reserve back from the day-ahead auction to trade in intraday markets.
-          </p>
-        </div>
+      <div className="chart-body">
+        {isLoading ? (
+          <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: 'var(--text-muted)' }}>
+            <div className="spinner" />
+            <span style={{ fontSize: 12 }}>Computing 48-point horizon curve…</span>
+          </div>
+        ) : (
+          <>
+            <div style={{ height: 280 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={curveData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e2d45" vertical={false} />
+                  <XAxis dataKey="horizon_hours" stroke="#2d3748" tick={{ fill: '#4a5568', fontSize: 11 }} unit="h" />
+                  <YAxis stroke="#2d3748" tick={{ fill: '#4a5568', fontSize: 11 }} tickFormatter={v => `${Math.round(v/100)/10}k`} width={42} unit="" />
+                  <Tooltip content={<HorizonTooltip />} />
+                  <Legend formatter={v => <span style={{ fontSize: 11, color: '#8b9dc3' }}>{v}</span>} wrapperStyle={{ paddingTop: 12 }} />
+                  {currentLeadTime > 0 && (
+                    <ReferenceLine x={Math.round(currentLeadTime)} stroke="#f59e0b" strokeDasharray="5 3"
+                      label={{ value: `~${Math.round(currentLeadTime)}h Gate`, position: 'top', fill: '#f59e0b', fontSize: 10 }}
+                    />
+                  )}
+                  <Line type="monotone" dataKey="mae"       name="MAE (MW)"         stroke="#06b6d4" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="rmse"      name="RMSE (MW)"        stroke="#818cf8" strokeWidth={2}   dot={false} />
+                  <Line type="monotone" dataKey="buffer_p90" name="P90 Buffer (MW)" stroke="#f59e0b" strokeWidth={2}   dot={false} strokeDasharray="5 3" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 16 }}>
+              {[
+                { label: 'Intraday (1–4h)', color: 'var(--cyan)', desc: 'NWP has updated; lowest MAE and minimum risk buffer required for procurement.' },
+                { label: 'Day-Ahead (~24-30h)', color: 'var(--amber)', desc: 'Current auction commitment window. Error rises significantly due to weather front uncertainty.' },
+                { label: 'Flexibility Option Value', color: 'var(--indigo)', desc: 'The MAE gap between horizons quantifies the commercial value of deferring commitment to intraday.' },
+              ].map(row => (
+                <div key={row.label} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: row.color, marginBottom: 6 }}>{row.label}</div>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>{row.desc}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

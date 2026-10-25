@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  fetchMetadata, 
-  fetchAnalysis, 
-  fetchHorizonCurve, 
-  AnalysisParams 
+import {
+  fetchMetadata,
+  fetchAnalysis,
+  fetchHorizonCurve,
+  AnalysisParams
 } from './api';
-import { 
-  AnalysisResponse, 
-  HorizonResponse, 
-  MetadataResponse 
+import {
+  AnalysisResponse,
+  HorizonResponse,
+  MetadataResponse
 } from './types';
 import { Header } from './components/Header';
 import { Controls } from './components/Controls';
@@ -19,15 +19,25 @@ import { DiurnalChart } from './components/DiurnalChart';
 import { DailyTrendChart } from './components/DailyTrendChart';
 import { WhatIfTool } from './components/WhatIfTool';
 import { MethodologyModal } from './components/MethodologyModal';
-import { 
-  Activity, 
-  TrendingDown, 
-  Clock, 
-  CalendarDays, 
-  Calculator, 
+import {
+  Activity,
+  TrendingDown,
+  Clock,
+  CalendarDays,
+  Calculator,
   AlertOctagon,
   RefreshCw
 } from 'lucide-react';
+
+type TabId = 'day_deepdive' | 'lead_time' | 'diurnal' | 'daily' | 'what_if';
+
+const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
+  { id: 'day_deepdive', label: 'Delivery Day Profile', icon: Activity },
+  { id: 'what_if', label: 'What-If Procurement', icon: Calculator },
+  { id: 'lead_time', label: 'Lead-Time Curve (1–48h)', icon: TrendingDown },
+  { id: 'diurnal', label: 'Diurnal Error Profile', icon: Clock },
+  { id: 'daily', label: 'Daily Month Trend', icon: CalendarDays },
+];
 
 export const App: React.FC = () => {
   const [params, setParams] = useState<AnalysisParams>({
@@ -39,24 +49,22 @@ export const App: React.FC = () => {
     selected_delivery_day: '2026-01-02',
   });
 
-  const [activeTab, setActiveTab] = useState<'day_deepdive' | 'lead_time' | 'diurnal' | 'daily' | 'what_if'>('day_deepdive');
+  const [activeTab, setActiveTab] = useState<TabId>('day_deepdive');
   const [metadata, setMetadata] = useState<MetadataResponse | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [horizon, setHorizon] = useState<HorizonResponse | null>(null);
-  
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isHorizonLoading, setIsHorizonLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isMethodologyOpen, setIsMethodologyOpen] = useState<boolean>(false);
 
-  // Load metadata once
   useEffect(() => {
     fetchMetadata()
       .then((data) => setMetadata(data))
       .catch((err) => console.warn('Could not load metadata:', err));
   }, []);
 
-  // Fetch analysis data
   useEffect(() => {
     let isCancelled = false;
     setIsLoading(true);
@@ -66,7 +74,6 @@ export const App: React.FC = () => {
       .then((data) => {
         if (!isCancelled) {
           setAnalysis(data);
-          // If current selected day not in available days, update it
           if (!data.delivery_days.includes(params.selected_delivery_day || '')) {
             setParams((prev) => ({
               ...prev,
@@ -82,9 +89,7 @@ export const App: React.FC = () => {
         if (!isCancelled) setIsLoading(false);
       });
 
-    return () => {
-      isCancelled = true;
-    };
+    return () => { isCancelled = true; };
   }, [
     params.decision_from,
     params.decision_to,
@@ -94,23 +99,16 @@ export const App: React.FC = () => {
     params.selected_delivery_day,
   ]);
 
-  // Fetch horizon curve
   useEffect(() => {
     let isCancelled = false;
     setIsHorizonLoading(true);
 
     fetchHorizonCurve(params.decision_from || '2026-01-01', params.decision_to || '2026-01-31', 48)
-      .then((data) => {
-        if (!isCancelled) setHorizon(data);
-      })
+      .then((data) => { if (!isCancelled) setHorizon(data); })
       .catch((err) => console.warn('Horizon fetch failed:', err))
-      .finally(() => {
-        if (!isCancelled) setIsHorizonLoading(false);
-      });
+      .finally(() => { if (!isCancelled) setIsHorizonLoading(false); });
 
-    return () => {
-      isCancelled = true;
-    };
+    return () => { isCancelled = true; };
   }, [params.decision_from, params.decision_to]);
 
   const handleParamsChange = (updated: Partial<AnalysisParams>) => {
@@ -119,107 +117,110 @@ export const App: React.FC = () => {
 
   const handleSelectDay = (day: string) => {
     setParams((prev) => ({ ...prev, selected_delivery_day: day }));
-    // Switch to deepdive tab so user immediately sees the selected day
     setActiveTab('day_deepdive');
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col font-sans">
-      {/* Header */}
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font)' }}>
       <Header metadata={metadata} onOpenMethodology={() => setIsMethodologyOpen(true)} />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Controls */}
-        <Controls 
-          params={params} 
-          onChange={handleParamsChange} 
-          isLoading={isLoading} 
-        />
+      <main style={{
+        flex: 1,
+        maxWidth: 1280, width: '100%', margin: '0 auto',
+        padding: '24px 20px',
+        display: 'flex', flexDirection: 'column', gap: 20,
+      }}>
+        <Controls params={params} onChange={handleParamsChange} />
 
-        {/* Error State */}
+        {/* Error Banner */}
         {error && (
-          <div className="p-4 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-200 text-sm flex items-start gap-3">
-            <AlertOctagon className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div style={{
+            padding: '12px 16px', borderRadius: 10,
+            background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.45)',
+            color: '#fda4af', fontSize: 13,
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+          }}>
+            <AlertOctagon size={18} color="#f43f5e" style={{ flexShrink: 0, marginTop: 1 }} />
             <div>
-              <strong className="font-semibold block">Analysis Query Failed</strong>
-              <p className="text-xs text-rose-300 mt-0.5">{error}</p>
+              <strong style={{ display: 'block', fontWeight: 600 }}>Analysis Query Failed</strong>
+              <p style={{ fontSize: 11, color: '#fca5a5', marginTop: 2 }}>{error}</p>
             </div>
           </div>
         )}
 
-        {/* Loading Spinner */}
+        {/* Initial Loading State */}
         {isLoading && !analysis && (
-          <div className="h-64 flex flex-col items-center justify-center gap-3 card">
-            <RefreshCw className="w-7 h-7 text-cyan-400 animate-spin" />
-            <p className="text-sm text-text-secondary">
-              Evaluating Elexon BMRS day-ahead wind forecast records...
+          <div className="card" style={{
+            height: 240,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
+          }}>
+            <RefreshCw size={28} color="var(--cyan)" style={{ animation: 'spin 1s linear infinite' }} />
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              Evaluating Elexon BMRS day-ahead wind forecast records…
             </p>
           </div>
         )}
 
-        {/* Main Dashboard Content */}
+        {/* Main Dashboard */}
         {analysis && (
-          <div className="space-y-6 animate-fade-in">
-            {/* KPI Cards Grid */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} className="animate-in">
+
             <KpiGrid summary={analysis.summary} />
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-border-subtle pb-1 overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('day_deepdive')}
-                className={`btn text-xs py-2 px-3.5 ${
-                  activeTab === 'day_deepdive' ? 'btn-primary' : 'btn-secondary'
-                }`}
-              >
-                <Activity className="w-3.5 h-3.5" />
-                <span>Delivery Day Profile ({analysis.selected_day_data.date})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('what_if')}
-                className={`btn text-xs py-2 px-3.5 ${
-                  activeTab === 'what_if' ? 'btn-primary' : 'btn-secondary'
-                }`}
-              >
-                <Calculator className="w-3.5 h-3.5" />
-                <span>What-If Procurement Tool</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('lead_time')}
-                className={`btn text-xs py-2 px-3.5 ${
-                  activeTab === 'lead_time' ? 'btn-primary' : 'btn-secondary'
-                }`}
-              >
-                <TrendingDown className="w-3.5 h-3.5" />
-                <span>Lead-Time Curve (1h – 48h)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('diurnal')}
-                className={`btn text-xs py-2 px-3.5 ${
-                  activeTab === 'diurnal' ? 'btn-primary' : 'btn-secondary'
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>Diurnal Error Profile (0..23h)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('daily')}
-                className={`btn text-xs py-2 px-3.5 ${
-                  activeTab === 'daily' ? 'btn-primary' : 'btn-secondary'
-                }`}
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                <span>Daily Month Trend</span>
-              </button>
+            {/* Tab Nav */}
+            <div style={{
+              display: 'flex', gap: 4, overflowX: 'auto',
+              borderBottom: '1px solid var(--border)', paddingBottom: 1,
+            }}>
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                const label = tab.id === 'day_deepdive'
+                  ? `Delivery Day Profile (${analysis.selected_day_data.date})`
+                  : tab.label;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '7px 14px', borderRadius: '8px 8px 0 0',
+                      border: '1px solid transparent',
+                      borderBottom: isActive ? '1px solid var(--bg-surface)' : '1px solid transparent',
+                      cursor: 'pointer',
+                      fontSize: 12, fontWeight: isActive ? 600 : 400,
+                      fontFamily: 'var(--font)', whiteSpace: 'nowrap',
+                      transition: 'all 0.15s',
+                      background: isActive
+                        ? 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(59,130,246,0.1))'
+                        : 'transparent',
+                      color: isActive ? '#67e8f9' : 'var(--text-secondary)',
+                      borderColor: isActive ? 'rgba(6,182,212,0.35)' : 'transparent',
+                      marginBottom: isActive ? -1 : 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
+                        (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-elevated)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+                        (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    <Icon size={13} />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Tab Views */}
+            {/* Tab Panels */}
             {activeTab === 'day_deepdive' && (
-              <div className="space-y-6 animate-fade-in">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} className="animate-in">
                 <DeliveryDayChart
                   dayData={analysis.selected_day_data}
                   availableDays={analysis.delivery_days}
@@ -227,21 +228,13 @@ export const App: React.FC = () => {
                   onSelectDay={handleSelectDay}
                   cutoff={params.cutoff || '09:20'}
                 />
-
-                {/* Embedded What-If Calculator right below deep-dive */}
-                <WhatIfTool 
-                  summary={analysis.summary} 
-                  dayData={analysis.selected_day_data} 
-                />
+                <WhatIfTool summary={analysis.summary} dayData={analysis.selected_day_data} />
               </div>
             )}
 
             {activeTab === 'what_if' && (
-              <div className="animate-fade-in space-y-6">
-                <WhatIfTool 
-                  summary={analysis.summary} 
-                  dayData={analysis.selected_day_data} 
-                />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} className="animate-in">
+                <WhatIfTool summary={analysis.summary} dayData={analysis.selected_day_data} />
                 <DeliveryDayChart
                   dayData={analysis.selected_day_data}
                   availableDays={analysis.delivery_days}
@@ -253,7 +246,7 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'lead_time' && (
-              <div className="animate-fade-in">
+              <div className="animate-in">
                 <LeadTimeCurve
                   curveData={horizon?.curve || []}
                   currentLeadTime={analysis.summary.mean_lead_time_hours}
@@ -263,13 +256,13 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'diurnal' && (
-              <div className="animate-fade-in">
+              <div className="animate-in">
                 <DiurnalChart hourlyMetrics={analysis.hourly_metrics} />
               </div>
             )}
 
             {activeTab === 'daily' && (
-              <div className="animate-fade-in space-y-6">
+              <div className="animate-in">
                 <DailyTrendChart
                   dailyMetrics={analysis.daily_metrics}
                   onSelectDay={handleSelectDay}
@@ -282,35 +275,45 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border-subtle bg-bg-surface/50 text-xs text-text-muted py-6 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer style={{
+        borderTop: '1px solid var(--border)',
+        background: 'rgba(13,17,23,0.6)',
+        padding: '20px 24px',
+        fontSize: 11,
+        color: 'var(--text-muted)',
+      }}>
+        <div style={{
+          maxWidth: 1280, margin: '0 auto',
+          display: 'flex', flexWrap: 'wrap',
+          alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        }}>
           <div>
-            <p className="text-text-secondary font-medium">
-              GB Wind Day-Ahead Procurement Pilot • UK Wholesale Electricity Market Analytics
+            <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 2 }}>
+              GB Wind Day-Ahead Procurement Pilot · UK Wholesale Electricity Market Analytics
             </p>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              Built with real Elexon BMRS API streams (FUELHH & WINDFOR). No demand or price data assumed.
+            <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              Built with real Elexon BMRS API streams (FUELHH &amp; WINDFOR). No demand or price data assumed.
             </p>
           </div>
-          <div className="flex items-center gap-4 text-xs">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button
               onClick={() => setIsMethodologyOpen(true)}
-              className="text-cyan-400 hover:underline"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--cyan)', fontSize: 11, fontFamily: 'var(--font)',
+              }}
             >
               Market Methodology
             </button>
             <span>•</span>
-            <span className="font-mono text-text-muted">Jan 2026 Benchmark</span>
+            <span style={{ fontFamily: 'var(--mono)', color: 'var(--text-muted)' }}>Jan 2026 Benchmark</span>
           </div>
         </div>
       </footer>
 
-      {/* Methodology Modal */}
-      <MethodologyModal
-        isOpen={isMethodologyOpen}
-        onClose={() => setIsMethodologyOpen(false)}
-      />
+      <MethodologyModal isOpen={isMethodologyOpen} onClose={() => setIsMethodologyOpen(false)} />
     </div>
   );
 };
+
 export default App;
