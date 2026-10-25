@@ -191,9 +191,13 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
               <Layers size={15} color="var(--amber)" />
               6. Systematic Forecast Bias: Transmission Metering vs Embedded Wind
             </h3>
-            <p>
-              The pilot observes a mean forecast bias of <strong style={{ color: 'var(--amber)' }}>+1,746 MW</strong> (forecasts average 13,031 MW vs 11,286 MW actuals, with 84.7% of hours over-forecast). Power market analysis reveals this is an authentic structural data characteristic:
-            </p>
+            <div style={{
+              padding: '10px 14px', borderRadius: 8,
+              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)',
+              fontStyle: 'italic', color: '#fef3c7', fontSize: 11, lineHeight: 1.5
+            }}>
+              "The day-ahead forecast systematically over-predicted in Jan 2026, with an average bias of +1,746 MW and 84.7% of hourly intervals over-forecast. Here is the physical and market evidence."
+            </div>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <li>
                 <strong style={{ color: '#fff' }}>WINDFOR Coverage:</strong> National Grid ESO (NESO) produces national wind forecasts covering <em>both</em> transmission-connected offshore/onshore wind farms and distribution-connected (embedded) wind generation across Great Britain (~30+ GW total capacity).
@@ -222,6 +226,56 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               While a single-day buffer (N=24 points, e.g. 1,543 MW on 2 Jan) can be toggled for day-specific inspection, 24 points are statistically noisy and vulnerable to intra-day variance. Trading desks are advised to base baseline risk reserves on the full-window empirical P90.
             </p>
+          </div>
+
+          {/* Section 8: Separating Bias from Spread */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <Scale size={15} color="var(--blue)" />
+              8. Separating Systematic Bias from Meteorological Spread
+            </h3>
+            <p>
+              The full-window <strong>P90 Buffer (4,154 MW)</strong> separates into two distinct components:
+            </p>
+            <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <li>
+                <strong style={{ color: 'var(--blue)' }}>Systematic Bias Component (P50 = 1,582 MW, ~38%):</strong> The predictable, median over-forecast across the month. The trading desk could eliminate this portion in advance via post-processing calibration or de-biasing filters.
+              </li>
+              <li>
+                <strong style={{ color: 'var(--emerald)' }}>Stochastic Weather Spread (P90 − P50 = 2,572 MW, ~62%):</strong> The true residual meteorological uncertainty resulting from unpredictable frontal timing, barometric shifts, and spatial dispersion.
+              </li>
+            </ul>
+          </div>
+
+          {/* Section 9: Lead-Time Dynamics */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <Clock size={15} color="var(--cyan)" />
+              9. Lead-Time Dynamics &amp; 28.0 Hour Mean Lead Time
+            </h3>
+            <p>
+              Under EPEX SPOT gate closure (09:20 London time on D-1), delivery hours on Day D range from 00:00 (14.7 hours ahead) to 23:00 (37.7 hours ahead).
+            </p>
+            <p>
+              Because NESO publishes WINDFOR forecasts at discrete intervals (typically 02:30, 04:30, 07:30 UTC prior to gate closure), the latest valid forecast prior to 09:20 is typically the 07:30 run. This results in an empirical <strong style={{ color: 'var(--cyan)' }}>mean lead time of 28.0 hours</strong> across all evaluated intervals in January.
+            </p>
+          </div>
+
+          {/* Section 10: Flat Buffer Limitations vs Dynamic Wind Regimes */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+              <Layers size={15} color="var(--amber)" />
+              10. Known Limitation: Flat MW Buffer vs. Dynamic Wind-Level Regimes
+            </h3>
+            <p>
+              A flat MW buffer ignores the level of wind. In physical reality, forecast error scales with total wind generation:
+            </p>
+            <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <li><strong style={{ color: '#fff' }}>Low Wind (&lt;8 GW):</strong> Empirical P90 Error = <strong>1,887 MW</strong> (flat 4,154 MW buffer would be overly conservative and expensive).</li>
+              <li><strong style={{ color: '#fff' }}>Medium Wind (8–16 GW):</strong> Empirical P90 Error = <strong>3,606 MW</strong>.</li>
+              <li><strong style={{ color: '#fff' }}>High Wind (&gt;16 GW):</strong> Empirical P90 Error = <strong>4,788 MW</strong> (flat 4,154 MW buffer would be insufficient to cover tail risk).</li>
+              <li><strong style={{ color: '#fff' }}>Proportional Relative Error:</strong> Across January, empirical P90 relative error is <strong>30.3% of the forecast</strong>. The What-If Tool includes a dynamic toggle for both Proportional and Bucketed Regime modes to address this limitation.</li>
+            </ul>
           </div>
         </div>
 

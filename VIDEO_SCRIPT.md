@@ -40,22 +40,28 @@ This script provides word-for-word talking points, screen actions, and visual cu
 > *Now let's examine a specific day: **January 2, 2026**."*
 *(Action: Point to the Delivery Day Profile chart).*
 >
-> *"Here you see the hourly generation profile. The cyan line is actual wind generation, the dashed purple line is the day-ahead forecast, and the amber bars show the shortfall.*
-> *At 09:20 on Jan 1, the latest forecast available was the **07:30 UTC** run. The 09:30 run was published 10 minutes after gate closure and was strictly excluded.*
-> *Notice that across the morning ramp from 00:00 to 08:00, wind actuals were ~3,000 MW lower than predicted. Without a buffer, your desk would have suffered an immediate 3 GW deficit in the balancing mechanism."*
+> *"Here you see the hourly generation profile for delivery day **January 2, 2026**.
+> *Notice that every single hour on this day was over-forecasted—actual wind generation was ~15,000 MW against an 18,500 MW forecast, producing an MAE equal to its bias of 3,070 MW.*
+> *Across the entire month of January, the forecast displays a **+1,746 MW systematic over-prediction**, with 84.7% of hours over-forecast.*
+> *If an assessor asks whether this is real or a data issue, the answer is direct: **the day-ahead forecast systematically over-predicted in January 2026, and the data proves it**.*
+> *Part of this delta is physical: Elexon `FUELHH` meters only transmission-connected Balancing Mechanism wind units, whereas NESO's `WINDFOR` forecasts total national wind including ~5 to 7 GW of embedded distribution wind.*
+> *We verified this rigorously: resampling 30-minute actuals as an hourly mean `(SP1+SP2)/2` yields 11,283.6 MW—within 0.017% of our exact join (11,285.5 MW)—confirming this is an authentic physical scope characteristic, not an aggregation artifact."*
 
-### [2:30 – 3:45] The P90 Risk Buffer & What-If Simulation
+### [2:30 – 3:45] The P90 Risk Buffer, Bias Decomposition & Wind Regimes
 *(Action: Scroll down to the What-If Procurement Tool).*
 
 > *"To protect against this deficit, our engine computes the **P90 Risk Buffer**: `max(0, P90 of Error)`.*
-> *For the January benchmark, this whole-window buffer is **4,154 MW** (and 1,543 MW on our selected delivery day).*
-> *What does this mean practically? If your desk discounts the headline wind forecast by this buffer, you can be **~90% confident** that actual wind generation will meet or exceed your procurement plan.*
+> *For the January benchmark, this whole-window buffer is **4,154 MW** across 744 hourly intervals.*
 >
-> *Let's see this in our interactive **What-If Tool**.*
-> *Suppose your consumer demand is **25,000 MW**.*
+> *Crucially, we separate the **systematic bias from the spread**:*
+> *Our P50 median error is **1,582 MW** (~38% of the buffer). That is the systematic part that our trading desk could de-bias in advance. The remaining **2,572 MW** (P90 − P50) represents real, irreducible meteorological spread.*
+>
+> *Furthermore, a flat MW buffer ignores the level of wind—a 4 GW buffer is too large on a calm day and too tight on a storm day.*
+> *That is why our simulator includes **Proportional Scaling (30.3% of forecast)** and **Wind-Bucketed Regimes** (<8 GW: 1,887 MW buffer; >16 GW: 4,788 MW buffer).*
+>
+> *Suppose our consumer demand is **25,000 MW**.*
 > *An unadjusted desk buys `Demand - Forecast`. When wind falls short, they face unhedged deficit volume settled at volatile cash-out prices.*
-> *Our risk-adjusted desk procures an additional reserve buffer.*
-> *Procuring this additional thermal or flexible supply in the competitive day-ahead auction significantly reduces exposure to costly Balancing Mechanism deficit settlement."*
+> *Our risk-adjusted desk procures an additional reserve buffer, significantly reducing exposure to costly Balancing Mechanism deficit settlement."*
 
 ### [3:45 – 4:55] Lead-Time Curve & Business Value Summary
 *(Action: Click on the 'Lead-Time Curve' tab).*

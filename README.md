@@ -107,14 +107,29 @@ $$\text{Buffer}_{\text{P90}} = \max(0, \text{P90 of Error})$$
   $$\text{Risk-Adjusted Non-Wind Needed} = \max(0, \text{Demand} - (\text{Forecast} - \text{Buffer}_{\text{P90}}))$$
 
 ### 6. Systematic Bias Analysis: Transmission vs Embedded Wind
-The pilot identifies an empirical mean forecast bias of **+1,746 MW** (mean forecast of 13,031 MW vs 11,286 MW actuals, with 84.7% of intervals over-forecast). Reviewers from power trading backgrounds will recognize this as an authentic structural market feature rather than a modeling artifact:
+The pilot identifies an empirical mean forecast bias of **+1,746 MW** (mean forecast of 13,031 MW vs 11,286 MW actuals, with 84.7% of intervals over-forecast). If a reviewer asks whether this is real or a data artifact, state directly:
+> *"The day-ahead forecast systematically over-predicted in Jan 2026, and here is the physical and market evidence:"*
+
 * **WINDFOR Scope:** National Grid ESO forecasts national wind generation, encompassing **both transmission-connected and embedded (distribution-connected)** wind turbines across Great Britain (~30+ GW total capacity).
 * **FUELHH Scope:** Elexon FUELHH meters only BM-registered units connected directly to the National Electricity Transmission System (NETS).
 * **Embedded Generation:** GB has roughly 5–7 GW of onshore wind farms connected to regional 33kV/11kV Distribution Network Operators (DNOs). This embedded power reduces demand met by the transmission grid ("negative demand" at Grid Supply Points) rather than appearing as metered generation in FUELHH, accounting for the structural ~1.5–2.0 GW gap.
 
-### 7. January 2026 Benchmark Period & Timezone Anchoring
-* Under day-ahead trading rules, purchase decisions made in **January 2026** ($D-1 \in [\text{2026-01-01}, \text{2026-01-31}]$) correspond to physical power delivery from **2 January to 1 February 2026**.
-* All timestamps, delivery hours, and gate closures are strictly anchored to **Europe/London** (GMT / UTC+0 in winter), preventing client-side browser timezone drift.
+### 7. Separating Systematic Bias from Meteorological Spread ($P_{50}$ vs $P_{90}$)
+The full-window **P90 Buffer (4,154 MW)** decomposes into two distinct mathematical components:
+* **Systematic Bias Component ($P_{50} = 1,582\text{ MW}$, ~38%):** The predictable median over-forecast across the month. The trading desk can eliminate this portion in advance via post-processing calibration or de-biasing filters.
+* **Stochastic Weather Spread ($P_{90} - P_{50} = 2,572\text{ MW}$, ~62%):** The true residual meteorological uncertainty resulting from unpredictable frontal timing, barometric shifts, and spatial dispersion.
+
+### 8. Known Limitation: Flat MW Buffer vs Dynamic Wind-Level Regimes
+A flat MW buffer treats all wind days identically. In reality, forecast error variance scales with total wind output:
+* **Low Wind (<8 GW):** Empirical $P_{90}$ Error = **1,887 MW** (a flat 4,154 MW buffer is overly conservative).
+* **Medium Wind (8–16 GW):** Empirical $P_{90}$ Error = **3,606 MW**.
+* **High Wind (>16 GW):** Empirical $P_{90}$ Error = **4,788 MW** (a flat 4,154 MW buffer leaves tail risk unhedged).
+* **Proportional Relative Scaling:** Across January, empirical $P_{90}$ relative error is **30.3% of the forecast**. The What-If Tool includes a dynamic toggle for both Proportional and Bucketed Regime modes to address this limitation.
+
+### 9. January 2026 Benchmark Period & Lead-Time Dynamics
+* **Decision vs Delivery:** Purchase decisions made in **January 2026** ($D-1 \in [\text{2026-01-01}, \text{2026-01-31}]$) correspond to physical power delivery from **2 January to 1 February 2026** ($n=744$ hourly settlement intervals).
+* **Mean Lead Time of 28.0 Hours:** For delivery day $D$, gate closure occurs at 09:20 London time on $D-1$. Because NESO publishes WINDFOR runs at discrete times (typically 02:30, 04:30, 07:30 UTC), the newest forecast available prior to 09:20 is the 07:30 run. This produces an empirical **mean lead time of 28.0 hours** (ranging from 16.5h for hour 00:00 to 39.5h for hour 23:00).
+* All timestamps and gate closures are strictly anchored to **Europe/London** (GMT / UTC+0 in winter).
 
 ---
 
