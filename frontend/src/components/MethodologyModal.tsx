@@ -22,16 +22,7 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
       onClick={onClose}
     >
       <div
-        style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 18,
-          maxWidth: 720, width: '100%',
-          maxHeight: '90vh', overflowY: 'auto',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
-          padding: '28px 32px',
-          display: 'flex', flexDirection: 'column', gap: 24,
-        }}
+        className="methodology-modal-dialog"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

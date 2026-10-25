@@ -28,7 +28,7 @@ export const Controls: React.FC<ControlsProps> = ({ params, onChange }) => {
   return (
     <div className="controls-panel">
       {/* Top row: title + mode toggle */}
-      <div className="flex items-center justify-between gap-3 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="controls-header">
         <div className="flex items-center gap-2">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--cyan)" strokeWidth="2">
             <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
@@ -62,15 +62,21 @@ export const Controls: React.FC<ControlsProps> = ({ params, onChange }) => {
           </div>
           <div className="date-inputs">
             <input
-              type="date" value={params.decision_from || '2026-01-01'} min="2025-12-31" max="2026-01-31"
+              type="date"
+              className="date-input"
+              value={params.decision_from || '2026-01-01'}
+              min="2025-12-31"
+              max="2026-01-31"
               onChange={e => onChange({ decision_from: e.target.value })}
-              style={{ width: 135 }}
             />
             <span className="date-sep">→</span>
             <input
-              type="date" value={params.decision_to || '2026-01-31'} min="2026-01-01" max="2026-02-01"
+              type="date"
+              className="date-input"
+              value={params.decision_to || '2026-01-31'}
+              min="2026-01-01"
+              max="2026-02-01"
               onChange={e => onChange({ decision_to: e.target.value })}
-              style={{ width: 135 }}
             />
           </div>
           <div className="chip-row" style={{ paddingTop: 4 }}>
@@ -108,7 +114,7 @@ export const Controls: React.FC<ControlsProps> = ({ params, onChange }) => {
                   {p.label} {p.note && <span style={{ opacity: 0.8 }}>{p.note}</span>}
                 </button>
               ))}
-              <div className="flex items-center gap-2" style={{ marginLeft: 8 }}>
+              <div className="custom-time-wrap flex items-center gap-2">
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Custom:</span>
                 <input type="time" value={cutoff} onChange={e => onChange({ cutoff: e.target.value })} style={{ width: 90 }} />
               </div>

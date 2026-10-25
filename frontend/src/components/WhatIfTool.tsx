@@ -184,12 +184,9 @@ export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
       </div>
 
       {/* Main content grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'start' }}>
+      <div className="whatif-container-grid">
         {/* Left: Demand Slider */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 10,
-          paddingRight: 20, borderRight: '1px solid var(--border)',
-        }}>
+        <div className="whatif-left-panel">
           <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Client Consumer Demand (MW)
           </label>
@@ -245,7 +242,7 @@ export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
 
         {/* Right: Result Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="whatif-results-grid">
             {/* Unadjusted */}
             <div style={{
               background: 'var(--bg-elevated)', border: '1px solid var(--border)',
@@ -325,7 +322,7 @@ export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
               </span>
               <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--mono)' }}>Window N=744</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, textAlign: 'center' }}>
+            <div className="whatif-decomp-grid">
               <div style={{ padding: '6px 8px', background: 'rgba(59,130,246,0.08)', borderRadius: 6 }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>1. Systematic Bias (P50)</span>
                 <p style={{ margin: '2px 0 0 0', fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--blue)' }}>

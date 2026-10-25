@@ -124,12 +124,7 @@ export const App: React.FC = () => {
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font)' }}>
       <Header metadata={metadata} onOpenMethodology={() => setIsMethodologyOpen(true)} />
 
-      <main style={{
-        flex: 1,
-        maxWidth: 1280, width: '100%', margin: '0 auto',
-        padding: '24px 20px',
-        display: 'flex', flexDirection: 'column', gap: 20,
-      }}>
+      <main className="main-layout-container">
         <Controls params={params} onChange={handleParamsChange} />
 
         {/* Error Banner */}
@@ -168,10 +163,7 @@ export const App: React.FC = () => {
             <KpiGrid summary={analysis.summary} />
 
             {/* Tab Nav */}
-            <div style={{
-              display: 'flex', gap: 4, overflowX: 'auto',
-              borderBottom: '1px solid var(--border)', paddingBottom: 1,
-            }}>
+            <div className="tab-nav-bar">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -184,6 +176,7 @@ export const App: React.FC = () => {
                     onClick={() => setActiveTab(tab.id)}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 6,
+                      flexShrink: 0,
                       padding: '7px 14px', borderRadius: '8px 8px 0 0',
                       border: '1px solid transparent',
                       borderBottom: isActive ? '1px solid var(--bg-surface)' : '1px solid transparent',
