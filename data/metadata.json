@@ -1,0 +1,25 @@
+{
+  "actuals_resolution_minutes": 30,
+  "forecasts_resolution_minutes": 60,
+  "observed_publish_times_utc": [
+    "02:30",
+    "04:30",
+    "07:30",
+    "09:30",
+    "11:30",
+    "12:25",
+    "15:30",
+    "18:30",
+    "22:30"
+  ],
+  "total_actuals_rows": 1681,
+  "total_forecasts_rows": 20440,
+  "actuals_start_time_min": "2025-12-29 23:30:00+00:00",
+  "actuals_start_time_max": "2026-02-02 23:30:00+00:00",
+  "forecasts_publish_min": "2025-12-30 02:30:00+00:00",
+  "forecasts_publish_max": "2026-02-02 22:30:00+00:00",
+  "forecasts_target_min": "2025-12-29 21:00:00+00:00",
+  "forecasts_target_max": "2026-02-04 21:00:00+00:00",
+  "fetched_at_utc": "2026-10-25T09:28:50.282134+00:00",
+  "is_synthetic": false
+}
