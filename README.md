@@ -153,7 +153,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Run pytest unit and integration test suite
-pytest backend/tests -v
+python -m pytest backend/tests -v
 
 # Start FastAPI dev server on port 8000
 python -m uvicorn backend.app.main:app --reload --port 8000
@@ -215,7 +215,7 @@ The application is architected to deploy directly to **Vercel**:
 
 Run all automated unit and integration tests:
 ```bash
-pytest backend/tests -v
+python -m pytest backend/tests -v
 ```
 
 ### Test Coverage Highlights (18 Tests):
