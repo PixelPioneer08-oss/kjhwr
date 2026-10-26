@@ -103,7 +103,11 @@ $$\text{Error} = \text{Forecast} - \text{Actual}$$
 $$\text{Buffer}_{\text{P90}} = \max(0, \text{P90 of Error})$$
 * **Physical Meaning:** "To be ~90% confident that wind will not fall short of plan, assume available wind is up to $\text{Buffer}_{\text{P90}}$ MW lower than forecast."
 * **Window Benchmark vs Day-Specific Buffer:** The What-If Calculator defaults to the **Window Benchmark Buffer (4,154 MW, $n=744$)**. Basing procurement on the full-month empirical distribution captures broad weather regimes (stagnant calms, frontal ramps, winter storms). A single-day buffer (e.g. 1,543 MW on 2 Jan, $n=24$) is statistically sensitive to intra-day sample variance.
-* **Empirical Nature & In-Sample Caveat:** The 4,154 MW benchmark is an **empirical metric computed strictly from the January 2026 evaluation window**. It is **not automatically a guarantee of 90% coverage in future out-of-sample months**. The future coverage rate will naturally be influenced by seasonal wind shifts, changing synoptic weather regimes, and the overall representativeness of the historical sample. In a production pipeline, buffers would be calibrated over rolling trailing windows (e.g. 30–90 days) and tested out-of-sample against live forward delivery days.
+* **Empirical Nature & In-Sample Caveat:** The 4,154 MW benchmark is an **empirical metric computed strictly from the January 2026 evaluation window**. It is **not automatically a guarantee of 90% coverage in future out-of-sample months**. The future coverage rate will naturally be influenced by seasonal wind shifts, changing synoptic weather regimes, and the overall representativeness of the historical sample.
+* **Out-of-Sample Historical Cross-Validation (2-Fold):** To empirically evaluate buffer performance on unseen data, January was split into two independent periods:
+  * **Fold 1 (Calibrate Jan 1–15, $N=360$):** Calibrated $P_{90}\text{ Buffer} = \mathbf{4,225\text{ MW}}$. When tested out-of-sample against forward delivery days in Jan 16–31 ($N=384$), it achieved **91.7% coverage**, satisfying the 90% confidence target.
+  * **Fold 2 (Calibrate Jan 16–31, $N=384$):** Calibrated $P_{90}\text{ Buffer} = \mathbf{3,981\text{ MW}}$. When tested against Jan 1–15 ($N=360$), it achieved **87.2% coverage**, reflecting the higher stormy variance at the start of the month.
+  * In live trading production, the risk buffer would be calibrated continuously on rolling historical trailing windows (e.g. 30–90 days) and backtested out-of-sample against live forward delivery days.
 * **Gross Shortfall Volume vs Net Bias Volume:** The headline energy shortfall is **1,401.8 GWh** (gross sum across over-forecast intervals only). The net forecast error volume across all intervals is ~1,299.0 GWh.
 * In the **What-If Tool**:
   $$\text{Unadjusted Non-Wind Needed} = \max(0, \text{Demand} - \text{Forecast})$$
@@ -130,6 +134,14 @@ A flat MW buffer treats all wind days identically. In reality, forecast error va
 * **Decision vs Delivery:** Purchase decisions made in **January 2026** ($D-1 \in [\text{2026-01-01}, \text{2026-01-31}]$) correspond to physical power delivery from **2 January to 1 February 2026** ($n=744$ hourly settlement intervals).
 * **Mean Lead Time of 28.0 Hours:** For delivery day $D$, gate closure occurs at 09:20 London time on $D-1$. As noted in Section 3, NESO publishes WINDFOR forecasts at discrete times across the day; the **07:30 UTC run** is the latest available before the 09:20 gate closure. This produces an empirical **mean lead time of 28.0 hours** (ranging from 16.5h for hour 00:00 to 39.5h for hour 23:00).
 * All timestamps and gate closures are strictly anchored to **Europe/London** (GMT / UTC+0 in winter).
+
+### 10. Pilot Scope Boundaries & Explicit Non-Claims
+In accordance with engineering integrity and wholesale power market reality, this pilot explicitly defines its analytical boundary:
+1. **No Direct Financial Savings Guarantee:** Analyzes physical volume forecast mismatch (in MW and MWh). Because cash-out price datasets (System Buy Price / System Sell Price) are out of scope, the tool does not guarantee monetary £/€ balance-sheet savings.
+2. **Imbalance Settlement Cost Modeling Excluded:** Dual cash-out exposure and Balancing Mechanism cashflow settlement are not modeled.
+3. **Not an Optimal Procurement Optimizer:** Evaluates volume-hedged scenarios under static demand assumptions; it does not calculate multi-market dynamic dispatch optimization.
+4. **Not a Statutory Reserve Requirement:** The P90 risk buffer provides an empirical volume haircut to de-risk commercial commitments, not a statutory or grid code operating reserve mandate.
+5. **National Wind Scope Only:** Strictly limited to national-level Great Britain wind generation from Elexon BMRS (`FUELHH` actuals and `WINDFOR` forecasts); it makes no claims regarding embedded solar PV, hydro, or other renewable generation.
 
 ---
 
