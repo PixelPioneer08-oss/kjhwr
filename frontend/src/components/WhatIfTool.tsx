@@ -360,35 +360,37 @@ export const WhatIfTool: React.FC<WhatIfToolProps> = ({ summary, dayData }) => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
               <span style={{ fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <ShieldCheck size={13} color="var(--emerald)" />
-                Out-of-Sample Sensitivity &amp; Historical Validation
+                Forward Holdout &amp; Retrospective Sensitivity Validation
               </span>
-              <span style={{ color: 'var(--emerald)', fontFamily: 'var(--mono)', fontSize: 10 }}>2-Fold Cross-Validation</span>
+              <span style={{ color: 'var(--emerald)', fontFamily: 'var(--mono)', fontSize: 10 }}>Time-Series Partition</span>
             </div>
             <p style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4, fontSize: 10 }}>
-              The <strong>4,154 MW benchmark</strong> is an empirical in-sample metric from January 2026. To verify buffer robustness against unseen weather, we partitioned January into two independent folds:
+              The <strong>4,154 MW benchmark</strong> is an in-sample historical reference across all 744 January intervals. To evaluate temporal validity, we preserve chronological ordering in a forward holdout and contrast it with a retrospective regime check:
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8, margin: '2px 0' }}>
               <div style={{ padding: '8px 10px', background: 'rgba(16,185,129,0.06)', borderRadius: 6, border: '1px solid rgba(16,185,129,0.2)' }}>
-                <span style={{ color: 'var(--emerald)', fontWeight: 600, fontSize: 10 }}>Fold 1: Calibrate Jan 1–15</span>
+                <span style={{ color: 'var(--emerald)', fontWeight: 600, fontSize: 10 }}>1. Forward Chronological Holdout (Jan 1–15 → Jan 16–31)</span>
                 <p style={{ margin: '2px 0', fontFamily: 'var(--mono)', color: '#fff', fontSize: 12 }}>
-                  P90 Buffer = <strong>4,225 MW</strong>
+                  Calibrated P90 = <strong>4,225 MW</strong> <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>(N=360)</span>
                 </p>
                 <span style={{ color: 'var(--text-secondary)', fontSize: 10 }}>
-                  Tested on Jan 16–31: <strong style={{ color: 'var(--emerald)' }}>91.7% Out-of-Sample Cover</strong> ✓
+                  Forward out-of-sample: <strong style={{ color: 'var(--emerald)' }}>91.7% Coverage</strong> (N=384) ✓
                 </span>
+                <p style={{ fontSize: 9, color: 'var(--text-muted)', margin: '3px 0 0 0' }}>Training strictly precedes evaluation</p>
               </div>
               <div style={{ padding: '8px 10px', background: 'rgba(59,130,246,0.06)', borderRadius: 6, border: '1px solid rgba(59,130,246,0.2)' }}>
-                <span style={{ color: 'var(--blue)', fontWeight: 600, fontSize: 10 }}>Fold 2: Calibrate Jan 16–31</span>
+                <span style={{ color: 'var(--blue)', fontWeight: 600, fontSize: 10 }}>2. Retrospective Regime Check (Jan 16–31 → Jan 1–15)</span>
                 <p style={{ margin: '2px 0', fontFamily: 'var(--mono)', color: '#fff', fontSize: 12 }}>
-                  P90 Buffer = <strong>3,981 MW</strong>
+                  Fitted P90 = <strong>3,981 MW</strong> <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>(N=384)</span>
                 </p>
                 <span style={{ color: 'var(--text-secondary)', fontSize: 10 }}>
-                  Tested on Jan 1–15: <strong style={{ color: 'var(--amber)' }}>87.2% Out-of-Sample Cover</strong>
+                  Reverse storm check: <strong style={{ color: 'var(--amber)' }}>87.2% Coverage</strong> (N=360)
                 </span>
+                <p style={{ fontSize: 9, color: 'var(--text-muted)', margin: '3px 0 0 0' }}>Regime sensitivity; not forward validation</p>
               </div>
             </div>
             <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-              <strong style={{ color: 'var(--amber)' }}>In-Sample Caveat:</strong> Historical buffers do not guarantee future 90% coverage due to seasonal shifts and weather regimes. In production, buffers would be calibrated over trailing 30–90 day rolling windows.
+              <strong style={{ color: 'var(--amber)' }}>Methodological Nuance:</strong> The 91.7% forward holdout is encouraging, but one half-month holdout is too small to guarantee future coverage. In live trading, a continuous rolling-origin calibration across 30–90 days of trailing data would be implemented.
             </p>
           </div>
 

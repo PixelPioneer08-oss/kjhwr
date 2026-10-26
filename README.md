@@ -103,11 +103,11 @@ $$\text{Error} = \text{Forecast} - \text{Actual}$$
 $$\text{Buffer}_{\text{P90}} = \max(0, \text{P90 of Error})$$
 * **Physical Meaning:** "To be ~90% confident that wind will not fall short of plan, assume available wind is up to $\text{Buffer}_{\text{P90}}$ MW lower than forecast."
 * **Window Benchmark vs Day-Specific Buffer:** The What-If Calculator defaults to the **Window Benchmark Buffer (4,154 MW, $n=744$)**. Basing procurement on the full-month empirical distribution captures broad weather regimes (stagnant calms, frontal ramps, winter storms). A single-day buffer (e.g. 1,543 MW on 2 Jan, $n=24$) is statistically sensitive to intra-day sample variance.
-* **Empirical Nature & In-Sample Caveat:** The 4,154 MW benchmark is an **empirical metric computed strictly from the January 2026 evaluation window**. It is **not automatically a guarantee of 90% coverage in future out-of-sample months**. The future coverage rate will naturally be influenced by seasonal wind shifts, changing synoptic weather regimes, and the overall representativeness of the historical sample.
-* **Out-of-Sample Historical Cross-Validation (2-Fold):** To empirically evaluate buffer performance on unseen data, January was split into two independent periods:
-  * **Fold 1 (Calibrate Jan 1–15, $N=360$):** Calibrated $P_{90}\text{ Buffer} = \mathbf{4,225\text{ MW}}$. When tested out-of-sample against forward delivery days in Jan 16–31 ($N=384$), it achieved **91.7% coverage**, satisfying the 90% confidence target.
-  * **Fold 2 (Calibrate Jan 16–31, $N=384$):** Calibrated $P_{90}\text{ Buffer} = \mathbf{3,981\text{ MW}}$. When tested against Jan 1–15 ($N=360$), it achieved **87.2% coverage**, reflecting the higher stormy variance at the start of the month.
-  * In live trading production, the risk buffer would be calibrated continuously on rolling historical trailing windows (e.g. 30–90 days) and backtested out-of-sample against live forward delivery days.
+* **Empirical Nature & In-Sample Caveat:** The 4,154 MW benchmark is an **in-sample historical reference computed across all 744 January intervals**. It is **not automatically a guarantee of 90% coverage in future out-of-sample delivery months**, as seasonal wind shifts and changing weather regimes will alter the empirical tail.
+* **Forward Chronological Holdout vs Retrospective Check:** To evaluate time-series sensitivity, January was evaluated under two partitions:
+  * **1. Forward Chronological Holdout (Jan 1–15 → Jan 16–31):** Calibrated on earlier data ($N=360$, $P_{90}\text{ Buffer} = \mathbf{4,225\text{ MW}}$) and evaluated forward out-of-sample against forward delivery days in Jan 16–31 ($N=384$), achieving **91.7% coverage** (satisfying the 90% target). Because training strictly precedes evaluation in time, this is a genuine forward out-of-sample forecast validation.
+  * **2. Retrospective Regime Sensitivity (Jan 16–31 → Jan 1–15):** Evaluates a buffer fitted on late January ($N=384$, $P_{90}\text{ Buffer} = \mathbf{3,981\text{ MW}}$) against earlier stormy delivery days ($N=360$), achieving **87.2% coverage**. This is a retrospective regime sensitivity comparison, not a forward out-of-sample forecast validation.
+  * *Methodological Recommendation:* While 91.7% forward holdout is encouraging, one half-month holdout is too small to guarantee long-term future coverage. In production trading, a continuous rolling-origin calibration across 30–90 days of trailing data would be implemented.
 * **Gross Shortfall Volume vs Net Bias Volume:** The headline energy shortfall is **1,401.8 GWh** (gross sum across over-forecast intervals only). The net forecast error volume across all intervals is ~1,299.0 GWh.
 * In the **What-If Tool**:
   $$\text{Unadjusted Non-Wind Needed} = \max(0, \text{Demand} - \text{Forecast})$$
@@ -230,7 +230,7 @@ Run all automated unit and integration tests:
 python -m pytest backend/tests -v
 ```
 
-### Test Coverage Highlights (18 Tests):
+### Test Coverage Highlights (20 Tests):
 1. `test_excludes_forecasts_after_cutoff`: Verifies that no forecast published after gate closure ($D-1$ 09:20) is ever selected.
 2. `test_picks_latest_before_cutoff`: Verifies that the newest available forecast run prior to cut-off is chosen.
 3. `test_inclusive_cutoff`: Verifies that forecasts published precisely at the cut-off boundary are included.
@@ -240,4 +240,6 @@ python -m pytest backend/tests -v
 7. `test_decision_window_logic`: Verifies that $D-1$ decision windows map to delivery day $D$ ($D-1 + 1$ day).
 8. `test_horizon_mode`: Verifies fixed lead-time filtering ($T - h$ hours).
 9. `test_metrics_calculation_and_p90_buffer`: Verifies MAE, RMSE, WAPE, MAPE, and P90 buffer calculations against synthetic fixtures.
-10. `test_api_endpoints_and_errors`: Tests FastAPI endpoints, 422 validation for malformed inputs, and 404 for empty query ranges.
+10. `test_forward_holdout_and_retrospective_sensitivity_validation`: Verifies 2-fold forward holdout (91.7% coverage) and retrospective sensitivity (87.2% coverage).
+11. `test_full_january_744_hourly_completeness`: Confirms exactly 744 matched hourly intervals across all 31 delivery days with zero missing intervals.
+12. `test_api_endpoints_and_errors`: Tests FastAPI endpoints, 422 validation for malformed inputs, and 404 for empty query ranges.

@@ -209,17 +209,17 @@ export const MethodologyModal: React.FC<MethodologyModalProps> = ({ isOpen, onCl
               The What-If Calculator defaults to the <strong style={{ color: 'var(--cyan)' }}>Window Benchmark Buffer (4,154 MW, N=744)</strong>. A full-month sample captures the empirical error distribution across diverse weather regimes.
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              <strong style={{ color: '#fff' }}>Empirical Nature &amp; Out-of-Sample Sensitivity Validation:</strong> The 4,154 MW benchmark is an empirical metric calculated from the January 2026 evaluation window. It does not automatically guarantee 90% coverage in future out-of-sample delivery months. To quantify out-of-sample sensitivity, we executed a 2-fold historical cross-validation:
+              <strong style={{ color: '#fff' }}>Empirical Nature &amp; Forward Holdout vs Retrospective Check:</strong> The 4,154 MW benchmark is an in-sample historical reference calculated across all 744 January intervals. It does not automatically guarantee 90% coverage in future out-of-sample delivery months. To evaluate time-series sensitivity, we examined two partitions:
             </p>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
               <li>
-                <strong style={{ color: 'var(--emerald)' }}>Fold 1 (Calibrate Jan 1–15, N=360):</strong> Calibrated buffer = <strong>4,225 MW</strong>. Tested out-of-sample on Jan 16–31 ($N=384$), achieved <strong style={{ color: 'var(--emerald)' }}>91.7% coverage</strong> (exceeding 90% target).
+                <strong style={{ color: 'var(--emerald)' }}>Forward Chronological Holdout (Jan 1–15 → Jan 16–31):</strong> Calibrates on earlier data (N=360, P90 = 4,225 MW) and evaluates forward out-of-sample on later data (N=384), achieving <strong style={{ color: 'var(--emerald)' }}>91.7% coverage</strong> (satisfying the 90% target). Because training strictly precedes evaluation, this is a genuine forward out-of-sample validation.
               </li>
               <li>
-                <strong style={{ color: 'var(--amber)' }}>Fold 2 (Calibrate Jan 16–31, N=384):</strong> Calibrated buffer = <strong>3,981 MW</strong>. Tested out-of-sample on Jan 1–15 ($N=360$), achieved <strong style={{ color: 'var(--amber)' }}>87.2% coverage</strong> (reflecting the stormy start of the month).
+                <strong style={{ color: 'var(--amber)' }}>Retrospective Regime Sensitivity (Jan 16–31 → Jan 1–15):</strong> Evaluates a buffer fitted on late January (N=384, P90 = 3,981 MW) against earlier stormy periods (N=360), achieving <strong style={{ color: 'var(--amber)' }}>87.2% coverage</strong>. This is a reverse-time regime comparison, not forward out-of-sample validation.
               </li>
               <li>
-                <strong style={{ color: '#fff' }}>Production Recommendation:</strong> In live utility trading, the risk buffer must be re-calibrated continuously on trailing 30–90 day historical windows and tested forward out-of-sample.
+                <strong style={{ color: '#fff' }}>Production Recommendation:</strong> While 91.7% forward holdout is encouraging, one half-month holdout is too small to establish long-term coverage. In live utility trading, continuous rolling-origin calibration across 30–90 days of trailing data would be implemented.
               </li>
             </ul>
           </div>

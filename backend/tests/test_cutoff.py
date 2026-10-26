@@ -10,6 +10,7 @@ from backend.app.analysis import (
     align_and_evaluate,
     calculate_metrics,
     get_delivery_days_for_decision_window,
+    DataLoader,
     TZ_LONDON
 )
 
@@ -254,4 +255,61 @@ def test_timezone_conversion_london_to_utc():
     assert len(result) == 1
     assert result.iloc[0]["publishTime"] == pd.Timestamp("2026-01-01 09:15:00+00:00")
     assert result.iloc[0]["generation_fc"] == 12200.0
+
+
+def test_forward_holdout_and_retrospective_sensitivity_validation():
+    """
+    Verify 2-fold historical cross-validation numbers programmatically:
+    1. Forward Chronological Holdout (Train Jan 1-15 -> Test Jan 16-31):
+       Calibrates on earlier data, evaluates forward out-of-sample -> ~91.7% coverage.
+    2. Retrospective Regime Sensitivity (Train Jan 16-31 -> Test Jan 1-15):
+       Evaluates late-Jan fitted buffer against early-Jan storms -> ~87.2% coverage.
+    """
+    dl = DataLoader()
+    w1 = align_and_evaluate(dl.actuals, dl.forecasts, mode="gate", cutoff="09:20", decision_from=date(2026, 1, 1), decision_to=date(2026, 1, 15))
+    w2 = align_and_evaluate(dl.actuals, dl.forecasts, mode="gate", cutoff="09:20", decision_from=date(2026, 1, 16), decision_to=date(2026, 1, 31))
+    
+    assert len(w1) == 360  # 15 days * 24 hours
+    assert len(w2) == 384  # 16 days * 24 hours
+    
+    m1 = calculate_metrics(w1)
+    m2 = calculate_metrics(w2)
+    
+    # 1. Forward Holdout: train on Jan 1-15, test on Jan 16-31
+    p90_train = m1["buffer_p90"]
+    assert 4200.0 < p90_train < 4250.0  # 4224.7 MW
+    cov_forward = float((w2["error"].to_numpy() <= p90_train).mean() * 100)
+    assert cov_forward > 90.0  # 91.67%
+    
+    # 2. Retrospective Sensitivity: train on Jan 16-31, evaluate on Jan 1-15
+    p90_late = m2["buffer_p90"]
+    assert 3950.0 < p90_late < 4000.0  # 3981.0 MW
+    cov_retro = float((w1["error"].to_numpy() <= p90_late).mean() * 100)
+    assert 85.0 < cov_retro < 90.0  # 87.22%
+
+
+def test_full_january_744_hourly_completeness():
+    """
+    Assert complete 744-hourly interval evaluation across entire January 2026 window:
+    - 31 distinct decision days D-1 (Jan 1-31)
+    - 31 distinct delivery days D (Jan 2 to Feb 1)
+    - Exactly 24 hourly intervals for every single delivery day
+    - Zero missing intervals across the entire month
+    """
+    dl = DataLoader()
+    df_all = align_and_evaluate(dl.actuals, dl.forecasts, mode="gate", cutoff="09:20", decision_from=date(2026, 1, 1), decision_to=date(2026, 1, 31))
+    
+    # Exactly 744 matched hourly intervals
+    assert len(df_all) == 744
+    
+    # Exactly 31 unique delivery days
+    delivery_dates = df_all["delivery_date"].unique()
+    assert len(delivery_dates) == 31
+    assert min(delivery_dates) == date(2026, 1, 2)
+    assert max(delivery_dates) == date(2026, 2, 1)
+    
+    # Every day has exactly 24 hourly points
+    counts_per_day = df_all.groupby("delivery_date").size()
+    assert (counts_per_day == 24).all()
+
 

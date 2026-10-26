@@ -55,8 +55,10 @@ This script provides word-for-word talking points, screen actions, and visual cu
 >
 > *We must be precise about what this number means: it is an **empirical in-sample benchmark** calculated over January 2026. It does not automatically guarantee 90% coverage for future months, because future weather regimes and seasonal shifts will alter the empirical tail.
 >
-> *To test out-of-sample sensitivity, we executed a **2-fold historical cross-validation**:
-> *When we calibrate the P90 buffer on the first half of January (Jan 1–15, 4,225 MW) and test it out-of-sample on the second half (Jan 16–31), it achieves **91.7% out-of-sample coverage**, validating that the statistical formulation successfully handles unseen weather regimes.
+> *To test temporal sensitivity, we evaluated two time-series partitions:
+> *First, a genuine **Forward Chronological Holdout**: calibrating on earlier data (Jan 1–15, 4,225 MW) and evaluating forward out-of-sample on later data (Jan 16–31), achieving **91.7% out-of-sample coverage**, which exceeds our 90% target.
+> *Second, a **Retrospective Regime Sensitivity Check**: taking a buffer fitted on late January (3,981 MW) and seeing how it would have handled early January storms, yielding **87.2% coverage**.
+> *While the 91.7% forward holdout is encouraging, one half-month holdout is too small to guarantee future coverage. In live trading, a continuous rolling-origin calibration across 30–90 days of trailing data would be implemented.
 >
 > *Crucially, we separate the **systematic bias from the spread**:
 > *Our P50 median error is **1,582 MW** (~38% of the buffer). That is the predictable bias that a desk could de-bias in advance via calibration. The remaining **2,572 MW** (P90 − P50) represents stochastic meteorological spread.
@@ -117,11 +119,11 @@ This script provides word-for-word talking points, screen actions, and visual cu
 > *We join strictly on exact `startTime` (:00 on the hour). We deliberately do not interpolate or fabricate half-hourly forecasts, and we report the exact sample size ($n$) of matched points."*
 
 ### [7:30 – 8:40] Automated Test Suite Execution
-*(Action: Open terminal and run `pytest backend/tests -v`).*
+*(Action: Open terminal and run `python -m pytest backend/tests -v`).*
 
 > *"Quality assurance is enforced through an automated Pytest suite in `backend/tests/`.*
 > *Let's run it live right now."*
-*(Point to the 18 passing tests).*
+*(Point to the 20 passing tests).*
 >
 > *Notice our key tests:*
 > * `test_excludes_forecasts_after_cutoff`: Injects synthetic forecasts before, at, and after 09:20; asserts that post-cutoff rows are strictly excluded.
@@ -129,6 +131,8 @@ This script provides word-for-word talking points, screen actions, and visual cu
 > * `test_inclusive_cutoff`: Verifies that a forecast timestamped exactly at 09:20:00 is accepted.
 > * `test_missing_forecast_interval_handled_cleanly`: Verifies that missing intervals do not trigger exceptions or synthetic data creation.
 > * `test_timezone_conversion_london_to_utc`: Confirms Europe/London civil cutoffs map cleanly to UTC timestamps.
+> * `test_forward_holdout_and_retrospective_sensitivity_validation`: Verifies the 91.7% forward holdout and 87.2% retrospective check programmatically.
+> * `test_full_january_744_hourly_completeness`: Mathematically confirms all 744 hourly settlement intervals are matched across January with zero missing intervals.
 > * `test_error_sign_convention`: Verifies that `Forecast - Actual` produces positive values for over-forecasts.
 > * `test_decision_window_logic` & `test_horizon_mode`: Verifies D-1 mapping and fixed lead times.
 > * `test_api_endpoints_and_errors`: Verifies input validation, 422 for malformed cutoffs, and 404 for missing ranges."*
