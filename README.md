@@ -136,7 +136,7 @@ A flat MW buffer treats all wind days identically. In reality, forecast error va
 ## 🚀 How to Run Locally
 
 ### Prerequisites
-* Python 3.10+ / 3.12+
+* Python 3.12+
 * Node.js v18+ and npm
 
 ### 1. Backend Setup
